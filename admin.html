@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Banco Pedro Carbo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="display: block; padding: 2rem;">
+
+    <div style="max-width: 1000px; margin: 0 auto;">
+        <header style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> Panel Admin - Banco Pedro Carbo</h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Gestión de saldos ($0.00 iniciales), productos y transacciones reales</p>
+            </div>
+            <a href="index.html" class="btn" style="width: auto; padding: 0.6rem 1rem; background: var(--bg-card-hover);"><i class="fa-solid fa-arrow-left"></i> Ir a la Banca</a>
+        </header>
+
+        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+            
+            <!-- GESTIÓN DE SALDOS DE USUARIOS -->
+            <div class="card-box">
+                <h3><i class="fa-solid fa-wallet"></i> Administrar Saldo de Usuario</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Agrega o quita dinero a las cuentas de los usuarios.</p>
+                <form id="adminBalanceForm">
+                    <div class="form-group">
+                        <label>Seleccionar Usuario</label>
+                        <select id="adminSelectUser" class="form-control" required>
+                            <option value="">Cargando usuarios...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Acción</label>
+                        <select id="adminActionType" class="form-control">
+                            <option value="add">Agregar Dinero (Depósito / Bono)</option>
+                            <option value="subtract">Quitar Dinero (Débito / Ajuste)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto ($ USD)</label>
+                        <input type="number" step="0.01" id="adminBalanceAmount" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo del Movimiento</label>
+                        <input type="text" id="adminBalanceReason" class="form-control" placeholder="Ej. Depósito en ventanilla, Bono inicial..." required>
+                    </div>
+                    <button type="submit" class="btn">Aplicar Cambios en la Cuenta</button>
+                </form>
+            </div>
+
+            <!-- AGREGAR PRODUCTOS A TIENDA -->
+            <div class="card-box">
+                <h3><i class="fa-solid fa-plus-circle"></i> Agregar Diamantes o Recargas</h3>
+                <form id="adminAddProductForm" style="margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Nombre del Producto</label>
+                        <input type="text" id="adminProdName" class="form-control" placeholder="Ej. 520 Diamantes Free Fire" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio ($ USD)</label>
+                        <input type="number" step="0.01" id="adminProdPrice" class="form-control" placeholder="5.25" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Producto</label>
+                        <select id="adminProdType" class="form-control">
+                            <option value="ff">Free Fire (Pide ID)</option>
+                            <option value="claro">Recarga Claro (Pide Teléfono)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn" style="margin-top: 2rem;">Guardar en la Tienda</button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- AUDITORÍA GLOBAL DE MOVIMIENTOS -->
+        <div class="card-box" style="margin-top: 2rem;">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Auditoría de Movimientos Reales</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Historial sincronizado en tiempo real de todas las transacciones y ajustes administrativos.</p>
+            <div id="adminLiveTransactions" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                <p style="color: var(--text-muted); text-align: center;">Cargando transacciones...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Operación exitosa</div>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banco Pedro Carbo - Banca Móvil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- PANTALLA DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">
+                <i class="fa-solid fa-building-columns"></i>
+                <h2>Banco Pedro Carbo</h2>
+                <p>Tu banca digital segura</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="correo@ejemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn">Iniciar Sesión</button>
+                <p class="auth-switch">¿No tienes cuenta? <a href="#" id="toRegister">Regístrate aquí</a></p>
+            </form>
+
+            <!-- Formulario de Registro -->
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="regName" class="form-control" placeholder="Pedro Carbo" required>
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="regEmail" class="form-control" placeholder="correo@ejemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn">Crear Cuenta ($0.00 inicial)</button>
+                <p class="auth-switch">¿Ya tienes cuenta? <a href="#" id="toLogin">Inicia sesión</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL (BANCA WEB) -->
+    <div id="appScreen" class="app-layout hidden">
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-building-columns"></i>
+                <span>Pedro Carbo</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a class="menu-item active" data-target="section-dashboard"><i class="fa-solid fa-house"></i> Inicio</a></li>
+                <li><a class="menu-item" data-target="section-transfer"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transferencias</a></li>
+                <li><a class="menu-item" data-target="section-store"><i class="fa-solid fa-gem"></i> Tienda & Recargas</a></li>
+                <li><a class="menu-item" data-target="section-cards"><i class="fa-solid fa-credit-card"></i> Tarjetas</a></li>
+                <!-- NUEVO: Botón de Movimientos agregado sin modificar lo anterior -->
+                <li><a class="menu-item" data-target="section-movements"><i class="fa-solid fa-clock-rotate-left"></i> Movimientos</a></li>
+            </ul>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content">
+            <!-- Barra Superior -->
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="mobileMenu" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;"><i class="fa-solid fa-bars"></i></button>
+                    <h3 id="pageTitle">Inicio</h3>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">PC</div>
+                    <span id="userNameDisplay" style="font-weight: 600; font-size: 0.9rem;">Cargando...</span>
+                    <button id="btnLogout" title="Cerrar Sesión" style="background: none; border: none; color: var(--danger); cursor: pointer; margin-left: 0.5rem;"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </header>
+
+            <!-- Cuerpo de Secciones -->
+            <div class="content-body">
+
+                <!-- SECCIÓN: INICIO / DASHBOARD -->
+                <div id="section-dashboard" class="section-view active">
+                    <div class="dashboard-grid">
+                        <!-- Tarjeta de Saldo Principal -->
+                        <div class="card-box balance-card">
+                            <p style="color: var(--text-muted); font-size: 0.85rem;">Saldo Disponible</p>
+                            <h1 id="dashBalance" style="font-size: 2.2rem; margin: 0.5rem 0; letter-spacing: -1px;">$0.00</h1>
+                            <p style="font-size: 0.8rem; color: var(--success);"><i class="fa-solid fa-shield-check"></i> Cuenta Activa en Tiempo Real</p>
+                        </div>
+
+                        <!-- Tarjeta de Acceso Rápido / Info -->
+                        <div class="card-box" style="display: flex; flex-direction: column; justify-content: center;">
+                            <h3>Bienvenido a tu Banca Móvil</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Administra tus fondos de forma segura, realiza transferencias o adquiere diamantes y recargas de manera instantánea.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: TRANSFERENCIAS -->
+                <div id="section-transfer" class="section-view">
+                    <div class="card-box" style="max-width: 600px; margin: 0 auto;">
+                        <h3><i class="fa-solid fa-paper-plane" style="color: var(--primary);"></i> Realizar Transferencia</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Envía fondos de forma segura e inmediata.</p>
+                        
+                        <form id="transferForm">
+                            <div class="form-group">
+                                <label>Número de Cuenta o Cédula Destino</label>
+                                <input type="text" class="form-control" placeholder="Ej. 0928374651" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Monto a Enviar ($ USD)</label>
+                                <input type="number" step="0.01" id="transferAmount" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Motivo de la Transferencia</label>
+                                <input type="text" class="form-control" placeholder="Ej. Pago de servicios, Préstamo..." required>
+                            </div>
+                            <button type="submit" class="btn">Transferir Fondos</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: TIENDA & RECARGAS -->
+                <div id="section-store" class="section-view">
+                    <div class="card-box" style="margin-bottom: 2rem;">
+                        <h3><i class="fa-solid fa-gem" style="color: var(--primary);"></i> Tienda de Diamantes y Recargas</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Productos gestionados directamente desde el panel de administración.</p>
+                    </div>
+
+                    <h4 style="margin-bottom: 1rem;">Diamantes Free Fire</h4>
+                    <div id="ffProductsContainer" class="dashboard-grid" style="margin-bottom: 2rem;">
+                        <p style="color: var(--text-muted);">Cargando diamantes disponibles...</p>
+                    </div>
+
+                    <h4 style="margin-bottom: 1rem;">Recargas Claro</h4>
+                    <div id="claroProductsContainer" class="dashboard-grid">
+                        <p style="color: var(--text-muted);">Cargando recargas disponibles...</p>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: TARJETAS -->
+                <div id="section-cards" class="section-view">
+                    <div class="card-box" style="max-width: 450px; margin: 0 auto; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <span style="font-weight: bold; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
+                            <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: var(--primary);"></i>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">NÚMERO DE TARJETA</p>
+                            <h3 id="vcNumber" style="letter-spacing: 2px; font-family: monospace;">4829 •••• •••• 9214</h3>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted);">TITULAR</p>
+                                <span id="vcHolder" style="font-weight: 600; font-size: 0.9rem;">USUARIO</span>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted);">CVV</p>
+                                <span id="vcCvv" style="font-weight: 600; font-family: monospace;">•••</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 2rem; display: flex; gap: 0.5rem;">
+                            <button id="btnToggleCardData" class="btn" style="background: var(--bg-card-hover); font-size: 0.8rem;"><i class="fa-solid fa-eye"></i> Ver Datos</button>
+                            <button id="btnLockCard" class="btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); font-size: 0.8rem;">Bloquear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NUEVO: SECCIÓN DE MOVIMIENTOS E HISTORIAL -->
+                <div id="section-movements" class="section-view">
+                    <div class="card-box" style="max-width: 700px; margin: 0 auto;">
+                        <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Historial de Movimientos</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Registro en tiempo real de todos tus ingresos, débitos y compras.</p>
+                        
+                        <div id="userMovementsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <p style="color: var(--text-muted);">Cargando movimientos...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL DE COMPRA EN TIENDA -->
+    <div id="storeModal" class="modal hidden">
+        <div class="modal-content card-box" style="max-width: 400px; width: 90%;">
+            <h3>Confirmar Compra</h3>
+            <p id="modalProductName" style="color: var(--primary); font-weight: 600; margin: 0.5rem 0;"></p>
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">Precio: <strong id="modalProductPrice"></strong></p>
+            
+            <form id="storeForm">
+                <div class="form-group" id="dynamicInputGroup">
+                    <!-- Se llena dinámicamente según sea ID de Free Fire o Teléfono Claro -->
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                    <button type="button" id="closeStoreModal" class="btn" style="background: var(--bg-card-hover);">Cancelar</button>
+                    <button type="submit" class="btn">Pagar Ahora</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE FACTURA DIGITAL -->
+    <div id="invoiceModal" class="modal hidden">
+        <div class="invoice-box" style="background: white; color: #0f172a; padding: 2rem; border-radius: 1rem; max-width: 500px; width: 90%; margin: auto;">
+            <div style="text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1rem;">
+                <h3>BANCO PEDRO CARBO</h3>
+                <p style="font-size: 0.8rem; color: #64748b;">Comprobante de Transacción Electrónica</p>
+            </div>
+            <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+                <div><strong>Fecha:</strong> <span id="invDate"></span></div>
+                <div><strong>Transacción ID:</strong> <span id="invId"></span></div>
+                <div><strong>Cliente:</strong> <span id="invClient"></span></div>
+                <div><strong>Producto:</strong> <span id="invProduct"></span></div>
+                <div><strong>Destino (ID/Tel):</strong> <span id="invTarget"></span></div>
+                <div style="font-size: 1.1rem; margin-top: 0.5rem; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem;">
+                    <strong>Total Pagado: $<span id="invTotal"></span> USD</strong>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button id="btnCloseInvoice" class="btn" style="background: #64748b;">Cerrar</button>
+                <button id="btnPrintInvoice" class="btn" style="background: #2563eb;"><i class="fa-solid fa-print"></i> Imprimir / Descargar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICACIONES -->
+    <div id="toast">Operación exitosa</div>
+
+    <!-- SCRIPT PRINCIPAL -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>

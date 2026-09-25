@@ -119,6 +119,7 @@ if (btnLogout) {
 }
 
 // Auth State Observer (Carga saldo real directo de Firestore)
+// Auth State Observer (Carga saldo real directo de Firestore)
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -150,6 +151,10 @@ onAuthStateChanged(auth, async (user) => {
         }
 
         cargarProductosTienda();
+        
+        // 👉 ¡AGREGAR ESTA LÍNEA AQUÍ!
+        cargarMovimientosUsuario(user.uid);
+
     } else {
         currentUser = null;
         if (appScreen) appScreen.classList.add("hidden");

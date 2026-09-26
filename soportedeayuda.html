@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soporte en Vivo - Banco Pedro Carbo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="soportedeayuda.css">
+</head>
+<body>
+
+    <!-- PANTALLA DE LOGIN DE SOPORTE -->
+    <div id="supportAuthScreen" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">
+                <i class="fa-solid fa-headset" style="color: var(--primary); font-size: 2.5rem; margin-bottom: 0.5rem;"></i>
+                <h2>Soporte Banco Pedro Carbo</h2>
+                <p>Inicia sesión con tu cuenta para recibir asistencia</p>
+            </div>
+
+            <form id="supportLoginForm">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="supportLoginEmail" class="form-control" placeholder="correo@ejemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="supportLoginPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn">Ingresar al Chat</button>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="index.html" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none;"><i class="fa-solid fa-arrow-left"></i> Volver a la Banca Principal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN DE SOPORTE (Oculta hasta iniciar sesión) -->
+    <div id="supportAppScreen" class="support-container hidden">
+        <!-- Cabecera -->
+        <div class="support-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <a href="index.html" class="back-link" style="position: static;"><i class="fa-solid fa-arrow-left"></i> Volver a la Banca</a>
+                <button id="btnSupportLogout" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
+            </div>
+            <h2><i class="fa-solid fa-headset" style="color: var(--primary);"></i> Centro de Soporte Humano</h2>
+            <p id="userRoleSubtitle">Conectando con un asesor en tiempo real...</p>
+        </div>
+
+        <!-- VISTA CLIENTE: Sala de espera y chat de 10 min -->
+        <div id="clientSupportView" class="support-grid hidden" style="grid-template-columns: 1fr;">
+            <div class="card-box whatsapp-box" style="max-width: 700px; margin: 0 auto; width: 100%;">
+                <div class="wa-header">
+                    <div class="wa-profile">
+                        <div class="wa-avatar"><i class="fa-solid fa-user-shield"></i></div>
+                        <div>
+                            <h4 id="agentNameHeader">Asesor de Banco Pedro Carbo</h4>
+                            <span id="chatStatusIndicator" class="wa-status">Buscando agente disponible...</span>
+                        </div>
+                    </div>
+                    <div id="timerDisplay" style="font-size: 0.85rem; background: rgba(0,0,0,0.2); padding: 0.3rem 0.6rem; border-radius: 0.5rem; display: none;">
+                        ⏱️ <span id="timeLeft">10:00</span>
+                    </div>
+                </div>
+                
+                <div id="clientChatBody" class="wa-chat-body">
+                    <div class="wa-message incoming">
+                        <p>Hola, bienvenido al soporte en vivo. Un asesor se unirá a tu chat automáticamente en breve.</p>
+                        <span class="wa-time">Ahora</span>
+                    </div>
+                </div>
+
+                <div class="wa-footer">
+                    <input type="text" id="clientInput" placeholder="Escribe tu consulta aquí..." class="form-control">
+                    <button id="clientSendBtn" class="btn"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA AGENTE DE SOPORTE EXCLUSIVO (soporte@bancopedrocarbo.com) -->
+        <div id="supportAgentView" class="support-grid hidden" style="grid-template-columns: 1fr 2fr;">
+            <!-- Panel izquierdo: Lista de solicitudes pendientes/activas -->
+            <div class="card-box">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;"><i class="fa-solid fa-users"></i> Cola de Solicitudes</h3>
+                <div id="waitingQueueList" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 400px; overflow-y: auto;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Cargando solicitudes...</p>
+                </div>
+            </div>
+
+            <!-- Panel derecho: Chat activo con el cliente seleccionado -->
+            <div class="card-box whatsapp-box" style="padding: 0; height: 450px;">
+                <div class="wa-header">
+                    <div class="wa-profile">
+                        <div class="wa-avatar"><i class="fa-solid fa-comments"></i></div>
+                        <div>
+                            <h4 id="activeClientName">Selecciona un chat</h4>
+                            <span class="wa-status">Panel de Agente Autorizado</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="agentChatBody" class="wa-chat-body">
+                    <div class="wa-message incoming">
+                        <p>Selecciona un usuario de la izquierda para unirte automáticamente a su solicitud y ver sus mensajes anteriores.</p>
+                    </div>
+                </div>
+
+                <div class="wa-footer">
+                    <input type="text" id="agentInput" placeholder="Responde al cliente..." class="form-control" disabled>
+                    <button id="agentSendBtn" class="btn" disabled><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE SOPORTE -->
+    <script type="module" src="soportedeayuda.js"></script>
+</body>
+</html>

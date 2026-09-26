@@ -15,7 +15,9 @@ import {
     collection, 
     addDoc, 
     onSnapshot, 
-    serverTimestamp 
+    serverTimestamp,
+    query,       // <-- Asegúrate de tener esto
+    where        // <-- Asegúrate de tener esto
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -442,35 +444,30 @@ document.addEventListener("DOMContentLoaded", () => {
         body.classList.add("is-pc");
     }
 });
-// Escuchar y cargar el historial de movimientos del usuario autenticado
+// Escuchar y cargar SOLO los movimientos del usuario con evento de clic para factura
 function cargarMovimientosUsuario(userId) {
     const movementsContainer = document.getElementById("userMovementsList");
     if (!movementsContainer) return;
 
-    // Puedes ordenar por timestamp si ya creaste el índice en Firestore, o simplemente listarlos
-    onSnapshot(collection(db, "transacciones"), (snapshot) => {
+    const q = query(collection(db, "transacciones"), where("userId", "==", userId));
+
+    onSnapshot(q, (snapshot) => {
         let html = "";
-        let transaccionesUsuario = [];
 
-        snapshot.forEach((docSnap) => {
-            const tx = docSnap.data();
-            // Filtrar solo las transacciones del usuario logueado actualmente
-            if (tx.userId === userId) {
-                transaccionesUsuario.push(tx);
-            }
-        });
-
-        if (transaccionesUsuario.length === 0) {
+        if (snapshot.empty) {
             movementsContainer.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 1rem;">No tienes movimientos registrados todavía.</p>`;
             return;
         }
 
-        transaccionesUsuario.forEach(tx => {
+        snapshot.forEach((docSnap) => {
+            const tx = docSnap.data();
             const isPositive = tx.amount > 0;
+            
+            // Renderizamos cada movimiento como un botón o tarjeta interactiva
             html += `
-                <div style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                <div class="movement-item" data-title="${tx.title}" data-category="${tx.category}" data-amount="${tx.amount}" data-date="${tx.date}" data-id="${docSnap.id}" style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.2s;">
                     <div>
-                        <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title}</h4>
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title} <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem; color: var(--text-muted); margin-left: 0.5rem;"></i></h4>
                         <p style="font-size: 0.8rem; color: var(--text-muted);">${tx.category} • ${tx.date}</p>
                     </div>
                     <div style="font-size: 1rem; font-weight: bold; color: ${isPositive ? 'var(--success)' : 'var(--danger)'};">
@@ -481,5 +478,44 @@ function cargarMovimientosUsuario(userId) {
         });
 
         movementsContainer.innerHTML = html;
+
+        // Añadir el evento de clic para abrir la factura de cualquier movimiento del historial
+        document.querySelectorAll(".movement-item").forEach(item => {
+            item.addEventListener("click", () => {
+                const title = item.getAttribute("data-title");
+                const category = item.getAttribute("data-category");
+                const amount = parseFloat(item.getAttribute("data-amount"));
+                const date = item.getAttribute("data-date");
+                const txId = item.getAttribute("data-id");
+
+                mostrarFacturaMovimiento({
+                    title,
+                    category,
+                    amount,
+                    date,
+                    id: "BPC-" + txId.substring(0, 8).toUpperCase()
+                });
+            });
+        });
     });
+}
+
+// Función auxiliar para rellenar y mostrar el comprobante estilo Banco
+function mostrarFacturaMovimiento(tx) {
+    const invDate = document.getElementById("invDate");
+    const invId = document.getElementById("invId");
+    const invClient = document.getElementById("invClient");
+    const invProduct = document.getElementById("invProduct");
+    const invTarget = document.getElementById("invTarget");
+    const invTotal = document.getElementById("invTotal");
+
+    if (invDate) invDate.textContent = tx.date;
+    if (invId) invId.textContent = tx.id;
+    if (invClient) invClient.textContent = currentUser ? (currentUser.displayName || "Cliente") : "Pedro Carbo";
+    if (invProduct) invProduct.textContent = tx.title;
+    if (invTarget) invTarget.textContent = tx.category;
+    if (invTotal) invTotal.textContent = Math.abs(tx.amount).toFixed(2);
+
+    const invoiceModal = document.getElementById("invoiceModal");
+    if (invoiceModal) invoiceModal.classList.remove("hidden");
 }

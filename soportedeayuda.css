@@ -1,0 +1,269 @@
+:root {
+    --primary: #2563eb;
+    --bg-dark: #0f172a;
+    --bg-card: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --wa-green: #25d366;
+    --wa-dark: #128c7e;
+    --danger: #ef4444;
+    --success: #22c55e;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Pantalla de Autenticación / Login */
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+    margin: auto;
+}
+
+.auth-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.auth-logo h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.3rem;
+}
+
+.auth-logo p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+    color: var(--text-muted);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+}
+
+.btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: #1d4ed8;
+}
+
+/* Contenedor Principal de Soporte */
+.support-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.support-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.back-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.back-link:hover {
+    color: var(--text-main);
+}
+
+.support-header h2 {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.support-header p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.support-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 1.5rem;
+}
+
+.card-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Chatbot Estilo WhatsApp */
+.whatsapp-box {
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #075e54;
+}
+
+.wa-header {
+    background: var(--wa-dark);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wa-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.wa-avatar {
+    width: 42px;
+    height: 42px;
+    background: white;
+    color: var(--wa-green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.wa-profile h4 {
+    font-size: 0.95rem;
+}
+
+.wa-status {
+    font-size: 0.75rem;
+    color: #d1fae5;
+}
+
+.wa-chat-body {
+    flex: 1;
+    background: #0b141a;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.wa-message {
+    max-width: 80%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.wa-message.incoming {
+    background: #202c33;
+    color: #e9edef;
+    align-self: flex-start;
+    border-top-left-radius: 0;
+}
+
+.wa-message.outgoing {
+    background: #005c4b;
+    color: #e9edef;
+    align-self: flex-end;
+    border-top-right-radius: 0;
+}
+
+.wa-time {
+    font-size: 0.65rem;
+    color: #8696a0;
+    display: block;
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+.wa-footer {
+    display: flex;
+    padding: 0.75rem;
+    background: #202c33;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.wa-footer input {
+    background: #2a3942;
+    border: none;
+    color: white;
+}
+
+.wa-footer button {
+    width: 45px;
+    background: var(--wa-green);
+}
+
+.wa-footer button:hover {
+    background: #1ebe5d;
+}
+
+@media (max-width: 768px) {
+    .support-grid {
+        grid-template-columns: 1fr;
+    }
+}

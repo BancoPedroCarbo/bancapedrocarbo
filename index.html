@@ -212,29 +212,43 @@
         </div>
     </div>
 
-    <!-- MODAL DE FACTURA DIGITAL -->
-    <div id="invoiceModal" class="modal hidden">
-        <div class="invoice-box" style="background: white; color: #0f172a; padding: 2rem; border-radius: 1rem; max-width: 500px; width: 90%; margin: auto;">
-            <div style="text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1rem;">
-                <h3>BANCO PEDRO CARBO</h3>
-                <p style="font-size: 0.8rem; color: #64748b;">Comprobante de Transacción Electrónica</p>
-            </div>
-            <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <div><strong>Fecha:</strong> <span id="invDate"></span></div>
-                <div><strong>Transacción ID:</strong> <span id="invId"></span></div>
-                <div><strong>Cliente:</strong> <span id="invClient"></span></div>
-                <div><strong>Producto:</strong> <span id="invProduct"></span></div>
-                <div><strong>Destino (ID/Tel):</strong> <span id="invTarget"></span></div>
-                <div style="font-size: 1.1rem; margin-top: 0.5rem; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem;">
-                    <strong>Total Pagado: $<span id="invTotal"></span> USD</strong>
-                </div>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button id="btnCloseInvoice" class="btn" style="background: #64748b;">Cerrar</button>
-                <button id="btnPrintInvoice" class="btn" style="background: #2563eb;"><i class="fa-solid fa-print"></i> Imprimir / Descargar</button>
+<!-- MODAL DE FACTURA DIGITAL / COMPROBANTE -->
+<div id="invoiceModal" class="modal hidden">
+    <div class="invoice-box" style="background: #ffffff; color: #0f172a; padding: 2rem; border-radius: 1rem; max-width: 480px; width: 90%; margin: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        
+        <!-- Cabecera del Comprobante -->
+        <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 1.25rem; margin-bottom: 1.25rem;">
+            <div style="font-size: 2rem; color: #2563eb; margin-bottom: 0.25rem;"><i class="fa-solid fa-building-columns"></i></div>
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #1e293b;">BANCO PEDRO CARBO</h3>
+            <p style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.2rem;">Comprobante Electrónico Autorizado</p>
+        </div>
+
+        <!-- Sello de Estado -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 0.5rem; border-radius: 0.5rem; text-align: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.25rem;">
+            <i class="fa-solid fa-circle-check"></i> Transacción Exitosa
+        </div>
+
+        <!-- Detalles de la Transacción -->
+        <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; color: #334155;">
+            <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">Fecha y Hora:</span> <span id="invDate" style="font-weight: 500;"></span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">Nº de Transacción:</span> <span id="invId" style="font-family: monospace; font-weight: 600;"></span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">Cliente / Titular:</span> <span id="invClient" style="font-weight: 500;"></span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">Concepto:</span> <span id="invProduct" style="font-weight: 500; text-align: right;"></span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">Detalle / Destino:</span> <span id="invTarget" style="font-weight: 500;"></span></div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.15rem; margin-top: 0.5rem; border-top: 2px dashed #cbd5e1; padding-top: 1rem;">
+                <strong style="color: #0f172a;">Valor Total:</strong> 
+                <strong style="color: #2563eb;">$<span id="invTotal"></span> USD</strong>
             </div>
         </div>
+
+        <!-- Botones de Acción -->
+        <div style="display: flex; gap: 0.75rem;">
+            <button id="btnCloseInvoice" class="btn" style="background: #64748b; flex: 1;">Cerrar</button>
+            <button id="btnPrintInvoice" class="btn" style="background: #2563eb; flex: 1;"><i class="fa-solid fa-print"></i> Imprimir</button>
+        </div>
     </div>
+</div>
 
     <!-- TOAST NOTIFICACIONES -->
     <div id="toast">Operación exitosa</div>

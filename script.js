@@ -519,7 +519,9 @@ function mostrarFacturaMovimiento(tx) {
     const invoiceModal = document.getElementById("invoiceModal");
     if (invoiceModal) invoiceModal.classList.remove("hidden");
 }
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// ✔️ CORRECTO
+import { doc, getDoc } from "firebase/firestore";
+const documentoRef = "algo";
 
 // Función para inicializar y gestionar la tarjeta virtual del usuario
 async function verificarYCargarTarjeta(user, db) {

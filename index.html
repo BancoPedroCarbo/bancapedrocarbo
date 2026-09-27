@@ -239,6 +239,31 @@
         </div>
     </div>
 
+    <!-- MODAL DE COMPROBANTE / FACTURA (NUEVO) -->
+    <div id="transactionModal" class="modal hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000;">
+        <div class="modal-content card-box" style="background: var(--bg-card, #1e293b); padding: 2rem; border-radius: 1rem; width: 90%; max-width: 400px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 1rem; text-align: center;"><i class="fa-solid fa-receipt"></i> Comprobante de Transacción</h3>
+            
+            <div style="margin-bottom: 0.8rem; font-size: 0.9rem;">
+                <strong>Tipo:</strong> <span id="modalTxTitle">-</span>
+            </div>
+            <div style="margin-bottom: 0.8rem; font-size: 0.9rem;">
+                <strong>Detalle:</strong> <span id="modalTxCategory">-</span>
+            </div>
+            <div style="margin-bottom: 0.8rem; font-size: 0.9rem;">
+                <strong>Monto:</strong> <span id="modalTxAmount" style="font-weight: bold;">-</span>
+            </div>
+            <div style="margin-bottom: 0.8rem; font-size: 0.9rem;">
+                <strong>Fecha:</strong> <span id="modalTxDate">-</span>
+            </div>
+            <div style="margin-bottom: 1.5rem; font-size: 0.9rem;">
+                <strong>Estado:</strong> <span id="modalTxEstado">-</span>
+            </div>
+
+            <button id="closeTxModal" class="btn" style="width: 100%; padding: 0.75rem;">Cerrar</button>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICACIONES -->
     <div id="toast">Operación exitosa</div>
 

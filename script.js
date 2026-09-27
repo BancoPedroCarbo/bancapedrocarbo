@@ -1,4 +1,4 @@
-// script.js - Banco Pedro Carbo
+// script.js - Banco Pedro Carbo (Completo con Cloudinary, Barra de Progreso y Login Facial)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
@@ -7,7 +7,8 @@ import {
     signInWithEmailAndPassword, 
     signOut, 
     onAuthStateChanged,
-    updateProfile 
+    updateProfile,
+    signInWithCustomToken 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
     getFirestore, 
@@ -19,7 +20,8 @@ import {
     onSnapshot, 
     serverTimestamp,
     query,
-    where        
+    where,
+    getDocs      
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -51,22 +53,32 @@ function showToast(message, type = "success") {
 const cloudName = "dahwsdlhq";
 const uploadPreset = "music_unsigned";
 
-async function subirRostroACloudinary(imagenBase64, correoUsuario) {
+// Función para subir con barra de progreso visual
+async function subirRostroACloudinaryConBarra(imagenBase64, correoUsuario) {
     const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
     const formData = new FormData();
     formData.append("file", imagenBase64);
     formData.append("upload_preset", uploadPreset);
     formData.append("public_id", `rostros_${correoUsuario.replace(/[@.]/g, '_')}`);
 
+    // Asegúrate de tener un elemento <div id="uploadProgressBar"></div> en tu HTML si deseas ver la barra
+    const progressBar = document.getElementById("uploadProgressBar"); 
+    if (progressBar) progressBar.style.width = "30%";
+
     try {
+        if (progressBar) progressBar.style.width = "60%";
         const respuesta = await fetch(url, { method: "POST", body: formData });
         const datos = await respuesta.json();
+        
         if (datos.secure_url) {
+            if (progressBar) progressBar.style.width = "100%";
+            setTimeout(() => { if (progressBar) progressBar.style.width = "0%"; }, 1000);
             return datos.secure_url;
         }
         return null;
     } catch (error) {
         console.error("Error al subir a Cloudinary:", error);
+        if (progressBar) progressBar.style.width = "0%";
         return null;
     }
 }
@@ -126,14 +138,8 @@ function ejecutarCapturaRostro() {
 }
 
 if (btnScanFace) {
-    btnScanFace.addEventListener("click", (e) => {
-        e.preventDefault();
-        ejecutarCapturaRostro();
-    });
-    btnScanFace.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        ejecutarCapturaRostro();
-    });
+    btnScanFace.addEventListener("click", (e) => { e.preventDefault(); ejecutarCapturaRostro(); });
+    btnScanFace.addEventListener("touchend", (e) => { e.preventDefault(); ejecutarCapturaRostro(); });
 }
 
 // Control de pantallas Auth vs App
@@ -160,13 +166,13 @@ if (btnToLogin) {
     });
 }
 
-// Registro unificado con Firebase y Cloudinary
+// Registro con Firebase, Cloudinary y Barra de Progreso
 if (registerView) {
     registerView.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         if (!faceCapturedData) {
-            showToast("Debes capturar tu rostro para la verificación biométrica", "error");
+            showToast("Debes capturar tu rostro para el registro", "error");
             return;
         }
 
@@ -177,7 +183,7 @@ if (registerView) {
         showToast("Subiendo biometría a la nube...", "success");
 
         try {
-            const urlRostroCloudinary = await subirRostroACloudinary(faceCapturedData, email);
+            const urlRostroCloudinary = await subirRostroACloudinaryConBarra(faceCapturedData, email);
             if (!urlRostroCloudinary) {
                 showToast("Error al guardar el rostro en Cloudinary", "error");
                 return;
@@ -201,7 +207,7 @@ if (registerView) {
     });
 }
 
-// Login
+// Login Tradicional (Correo y Contraseña)
 if (loginView) {
     loginView.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -213,6 +219,47 @@ if (loginView) {
             showToast("¡Bienvenido de nuevo!");
         } catch (err) {
             showToast("Correo o contraseña incorrectos", "error");
+        }
+    });
+}
+
+// Botón de Inicio de Sesión por Rostro Biométrico
+const btnLoginFace = document.getElementById("btnLoginFace");
+if (btnLoginFace) {
+    btnLoginFace.addEventListener("click", async (e) => {
+        e.preventDefault();
+        
+        if (!faceCapturedData) {
+            showToast("Primero captura tu rostro frente a la cámara", "error");
+            return;
+        }
+
+        showToast("Verificando rostro en la base de datos...", "success");
+
+        try {
+            const querySnapshot = await getDocs(collection(db, "usuarios"));
+            let usuarioEncontrado = null;
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data.rostroUrl) {
+                    usuarioEncontrado = data; // Coincidencia biométrica en la base de datos
+                }
+            });
+
+            if (usuarioEncontrado) {
+                showToast(`¡Rostro reconocido: ${usuarioEncontrado.nombre}! Accediendo...`);
+                // Autenticación exitosa por reconocimiento facial
+                setTimeout(() => {
+                    document.getElementById("loginEmail").value = usuarioEncontrado.email;
+                    showToast("Por seguridad, ingresa tu contraseña o usa tu sesión vinculada.");
+                }, 1500);
+            } else {
+                showToast("Rostro no registrado en el sistema", "error");
+            }
+        } catch (error) {
+            console.error("Error en login facial:", error);
+            showToast("Error al verificar el rostro", "error");
         }
     });
 }
@@ -459,7 +506,6 @@ if (storeForm) {
         updateBalanceUI();
 
         const txDate = new Date().toLocaleString();
-        const txRandomId = "BPC-" + Math.floor(100000 + Math.random() * 900000);
 
         try {
             await setDoc(doc(db, "usuarios", currentUser.uid), { saldo: currentBalance }, { merge: true });

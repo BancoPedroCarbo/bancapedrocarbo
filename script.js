@@ -521,7 +521,7 @@ function renderizarTarjetaHTML(tData, container, user, db) {
     `;
 }
 
-// Historial de Movimientos
+// Historial de Movimientos y apertura de factura/comprobante
 function cargarMovimientosUsuario(userId) {
     const movementsContainer = document.getElementById("userMovementsList");
     if (!movementsContainer) return;
@@ -540,8 +540,16 @@ function cargarMovimientosUsuario(userId) {
             const tx = docSnap.data();
             const isPositive = (tx.amount > 0);
             
+            // Guardamos los datos en atributos data-* para usarlos en el comprobante
             html += `
-                <div class="movement-item" data-title="${tx.title || 'Transacción'}" data-category="${tx.category || ''}" data-amount="${tx.amount || 0}" data-date="${tx.date || 'Fecha no disponible'}" data-id="${docSnap.id}" style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.2s;">
+                <div class="movement-item" 
+                    data-title="${tx.title || 'Transacción'}" 
+                    data-category="${tx.category || ''}" 
+                    data-amount="${tx.amount || 0}" 
+                    data-date="${tx.date || 'Fecha no disponible'}" 
+                    data-banco="${tx.banco || 'Banco Pedro Carbo'}"
+                    data-estado="${tx.estado || 'Completado'}"
+                    style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 0.5rem;">
                     <div>
                         <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title || 'Transacción'} <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem; color: var(--text-muted); margin-left: 0.5rem;"></i></h4>
                         <p style="font-size: 0.8rem; color: var(--text-muted);">${tx.category || ''} • ${tx.date || ''}</p>
@@ -554,6 +562,41 @@ function cargarMovimientosUsuario(userId) {
         });
 
         movementsContainer.innerHTML = html;
+
+        // Vincular el evento clic a cada movimiento para abrir la factura/comprobante
+        document.querySelectorAll(".movement-item").forEach(item => {
+            item.addEventListener("click", () => {
+                const title = item.getAttribute("data-title");
+                const category = item.getAttribute("data-category");
+                const amount = item.getAttribute("data-amount");
+                const date = item.getAttribute("data-date");
+                const banco = item.getAttribute("data-banco");
+                const estado = item.getAttribute("data-estado");
+
+                // Si tienes un modal de factura en tu HTML, aquí lo rellenamos y mostramos:
+                const modalFactura = document.getElementById("transactionModal") || document.getElementById("modalFactura");
+                
+                if (modalFactura) {
+                    // Rellenar campos si existen en tu HTML
+                    const fTitle = document.getElementById("modalTxTitle");
+                    const fCategory = document.getElementById("modalTxCategory");
+                    const fAmount = document.getElementById("modalTxAmount");
+                    const fDate = document.getElementById("modalTxDate");
+                    const fEstado = document.getElementById("modalTxEstado");
+
+                    if (fTitle) fTitle.textContent = title;
+                    if (fCategory) fCategory.textContent = category;
+                    if (fAmount) fAmount.textContent = `$${Number(amount).toFixed(2)}`;
+                    if (fDate) fDate.textContent = date;
+                    if (fEstado) fEstado.textContent = estado;
+
+                    modalFactura.classList.remove("hidden");
+                } else {
+                    // Alerta de respaldo por si el modal visual tiene otro ID en tu proyecto
+                    alert(`Comprobante:\n${title}\nDetalle: ${category}\nMonto: $${amount}\nFecha: ${date}\nEstado: ${estado}`);
+                }
+            });
+        });
     });
 }
 

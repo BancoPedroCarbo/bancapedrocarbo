@@ -127,7 +127,7 @@ if (btnLogout) {
     });
 }
 
-// Auth State Observer actualizado para usuarios antiguos
+// Auth State Observer (Con soporte de autogeneración para usuarios antiguos)
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -151,18 +151,16 @@ onAuthStateChanged(auth, async (user) => {
                 currentUserData = userDoc.data();
                 currentBalance = currentUserData.saldo ?? 0.00;
                 
-                // COMPROBACIÓN PARA USUARIOS ANTIGUOS:
-                // Si el usuario ya existe pero no tiene número de cuenta, se lo asignamos ahora mismo
-                if (!currentUserData.numeroCuenta) {
+                // Si es un usuario antiguo sin número de cuenta, se lo asignamos ahora mismo
+                if (!currentUserData.numeroCuenta || currentUserData.numeroCuenta === "") {
                     const nuevoNumeroCuenta = "55" + Math.floor(10000000 + Math.random() * 90000000);
                     await setDoc(userRef, { numeroCuenta: nuevoNumeroCuenta }, { merge: true });
-                    currentUserData.numeroCuenta = nuevoNumeroCuenta; // Actualizamos la variable local
+                    currentUserData.numeroCuenta = nuevoNumeroCuenta;
                 }
                 
                 const accNumDisp = document.getElementById("userAccountNum");
                 if (accNumDisp) accNumDisp.textContent = `Cuenta: ${currentUserData.numeroCuenta}`;
             } else {
-                // Por si el usuario está en Auth pero no en la colección Firestore
                 currentBalance = 0.00;
             }
             updateBalanceUI();
@@ -183,6 +181,13 @@ onAuthStateChanged(auth, async (user) => {
         if (authScreen) authScreen.classList.remove("hidden");
     }
 });
+
+function updateBalanceUI() {
+    const dashBalance = document.getElementById("dashBalance");
+    if (!dashBalance) return;
+    const formatted = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(currentBalance);
+    dashBalance.textContent = formatted;
+}
 
 // Navegación de la barra lateral
 const menuItems = document.querySelectorAll(".menu-item");

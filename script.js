@@ -1,4 +1,4 @@
-// script.js - Banco Pedro Carbo (Completo con Cloudinary, Barra de Progreso y Login Facial)
+// script.js - Banco Pedro Carbo (Sin verificación de rostro)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
@@ -7,8 +7,7 @@ import {
     signInWithEmailAndPassword, 
     signOut, 
     onAuthStateChanged,
-    updateProfile,
-    signInWithCustomToken 
+    updateProfile 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
     getFirestore, 
@@ -20,8 +19,7 @@ import {
     onSnapshot, 
     serverTimestamp,
     query,
-    where,
-    getDocs      
+    where      
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -49,99 +47,6 @@ function showToast(message, type = "success") {
     setTimeout(() => { toast.className = ""; }, 3000);
 }
 
-// Configuración de Cloudinary
-const cloudName = "dahwsdlhq";
-const uploadPreset = "music_unsigned";
-
-// Función para subir con barra de progreso visual
-async function subirRostroACloudinaryConBarra(imagenBase64, correoUsuario) {
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-    const formData = new FormData();
-    formData.append("file", imagenBase64);
-    formData.append("upload_preset", uploadPreset);
-    formData.append("public_id", `rostros_${correoUsuario.replace(/[@.]/g, '_')}`);
-
-    // Asegúrate de tener un elemento <div id="uploadProgressBar"></div> en tu HTML si deseas ver la barra
-    const progressBar = document.getElementById("uploadProgressBar"); 
-    if (progressBar) progressBar.style.width = "30%";
-
-    try {
-        if (progressBar) progressBar.style.width = "60%";
-        const respuesta = await fetch(url, { method: "POST", body: formData });
-        const datos = await respuesta.json();
-        
-        if (datos.secure_url) {
-            if (progressBar) progressBar.style.width = "100%";
-            setTimeout(() => { if (progressBar) progressBar.style.width = "0%"; }, 1000);
-            return datos.secure_url;
-        }
-        return null;
-    } catch (error) {
-        console.error("Error al subir a Cloudinary:", error);
-        if (progressBar) progressBar.style.width = "0%";
-        return null;
-    }
-}
-
-// Variables globales para la cámara y captura facial
-let faceCapturedData = null;
-const loginFaceVideo = document.getElementById('loginFaceVideo');
-const loginFaceCanvas = document.getElementById('loginFaceCanvas');
-const btnScanFace = document.getElementById('btnScanFace');
-const faceScanOverlay = document.getElementById('faceScanOverlay');
-
-// Iniciar cámara frontal al cargar
-async function initCamera() {
-    try {
-        if (loginFaceVideo) {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
-            });
-            loginFaceVideo.srcObject = stream;
-            await loginFaceVideo.play();
-        }
-    } catch (err) {
-        console.warn('No se pudo acceder a la cámara:', err);
-        if (faceScanOverlay) {
-            faceScanOverlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Permiso de cámara denegado';
-        }
-    }
-}
-initCamera();
-
-// Función de captura unificada (para clics y toques móviles)
-function ejecutarCapturaRostro() {
-    if (!loginFaceVideo || !loginFaceVideo.srcObject) {
-        showToast("La cámara no está activa.", "error");
-        return;
-    }
-
-    const context = loginFaceCanvas.getContext('2d');
-    const ancho = loginFaceVideo.videoWidth || 220;
-    const alto = loginFaceVideo.videoHeight || 160;
-
-    loginFaceCanvas.width = ancho;
-    loginFaceCanvas.height = alto;
-    context.drawImage(loginFaceVideo, 0, 0, ancho, alto);
-    
-    faceCapturedData = loginFaceCanvas.toDataURL('image/png');
-    
-    if (faceCapturedData && faceCapturedData.length > 100) {
-        if (faceScanOverlay) {
-            faceScanOverlay.innerHTML = '<i class="fa-solid fa-circle-check" style="font-size: 1.5rem; color: #22c55e;"></i><br>¡Rostro Capturado!';
-            faceScanOverlay.style.background = 'rgba(34, 197, 94, 0.25)';
-        }
-        showToast("¡Rostro capturado correctamente!");
-    } else {
-        showToast("Error al capturar imagen", "error");
-    }
-}
-
-if (btnScanFace) {
-    btnScanFace.addEventListener("click", (e) => { e.preventDefault(); ejecutarCapturaRostro(); });
-    btnScanFace.addEventListener("touchend", (e) => { e.preventDefault(); ejecutarCapturaRostro(); });
-}
-
 // Control de pantallas Auth vs App
 const authScreen = document.getElementById("authScreen");
 const appScreen = document.getElementById("appScreen");
@@ -166,29 +71,16 @@ if (btnToLogin) {
     });
 }
 
-// Registro con Firebase, Cloudinary y Barra de Progreso
+// Registro estándar con Firebase (Correo y Contraseña)
 if (registerView) {
     registerView.addEventListener("submit", async (e) => {
         e.preventDefault();
-
-        if (!faceCapturedData) {
-            showToast("Debes capturar tu rostro para el registro", "error");
-            return;
-        }
 
         const name = document.getElementById("regName").value;
         const email = document.getElementById("regEmail").value;
         const password = document.getElementById("regPassword").value;
 
-        showToast("Subiendo biometría a la nube...", "success");
-
         try {
-            const urlRostroCloudinary = await subirRostroACloudinaryConBarra(faceCapturedData, email);
-            if (!urlRostroCloudinary) {
-                showToast("Error al guardar el rostro en Cloudinary", "error");
-                return;
-            }
-
             const userCred = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(userCred.user, { displayName: name });
             
@@ -196,7 +88,6 @@ if (registerView) {
                 nombre: name,
                 email: email,
                 saldo: 0.00,
-                rostroUrl: urlRostroCloudinary,
                 creado: serverTimestamp()
             });
 
@@ -207,7 +98,7 @@ if (registerView) {
     });
 }
 
-// Login Tradicional (Correo y Contraseña)
+// Login estándar
 if (loginView) {
     loginView.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -219,47 +110,6 @@ if (loginView) {
             showToast("¡Bienvenido de nuevo!");
         } catch (err) {
             showToast("Correo o contraseña incorrectos", "error");
-        }
-    });
-}
-
-// Botón de Inicio de Sesión por Rostro Biométrico
-const btnLoginFace = document.getElementById("btnLoginFace");
-if (btnLoginFace) {
-    btnLoginFace.addEventListener("click", async (e) => {
-        e.preventDefault();
-        
-        if (!faceCapturedData) {
-            showToast("Primero captura tu rostro frente a la cámara", "error");
-            return;
-        }
-
-        showToast("Verificando rostro en la base de datos...", "success");
-
-        try {
-            const querySnapshot = await getDocs(collection(db, "usuarios"));
-            let usuarioEncontrado = null;
-
-            querySnapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                if (data.rostroUrl) {
-                    usuarioEncontrado = data; // Coincidencia biométrica en la base de datos
-                }
-            });
-
-            if (usuarioEncontrado) {
-                showToast(`¡Rostro reconocido: ${usuarioEncontrado.nombre}! Accediendo...`);
-                // Autenticación exitosa por reconocimiento facial
-                setTimeout(() => {
-                    document.getElementById("loginEmail").value = usuarioEncontrado.email;
-                    showToast("Por seguridad, ingresa tu contraseña o usa tu sesión vinculada.");
-                }, 1500);
-            } else {
-                showToast("Rostro no registrado en el sistema", "error");
-            }
-        } catch (error) {
-            console.error("Error en login facial:", error);
-            showToast("Error al verificar el rostro", "error");
         }
     });
 }

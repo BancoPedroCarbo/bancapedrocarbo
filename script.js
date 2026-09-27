@@ -251,7 +251,6 @@ if (formTransferencia) {
             let nombreBeneficiarioDetectado = "Tercero Externo";
 
             if (bancoDestino === "Banco Pedro Carbo") {
-                // Validación automática en Firestore para nuestro banco (Sin pedir cédula)
                 const qAccount = query(collection(db, "usuarios"), where("numeroCuenta", "==", cuentaDestino));
                 const querySnap = await getDocs(qAccount);
 
@@ -265,11 +264,9 @@ if (formTransferencia) {
                         return;
                     }
 
-                    // Acreditar saldo de forma automática al usuario interno
                     const nuevoSaldoDestino = (beneficiarioData.saldo || 0) + monto;
                     await setDoc(doc(db, "usuarios", beneficiarioDoc.id), { saldo: nuevoSaldoDestino }, { merge: true });
 
-                    // Registrar notificación/movimiento de ingreso al receptor
                     await addDoc(collection(db, "transacciones"), {
                         userId: beneficiarioDoc.id,
                         userEmail: beneficiarioData.email,
@@ -285,12 +282,10 @@ if (formTransferencia) {
                 }
             }
 
-            // Descontar saldo al emisor (incluyendo comisión si aplica)
             currentBalance -= montoTotalADebitar;
             updateBalanceUI();
             await setDoc(doc(db, "usuarios", currentUser.uid), { saldo: currentBalance }, { merge: true });
 
-            // Registrar la transacción de salida
             await addDoc(collection(db, "transacciones"), {
                 userId: currentUser.uid,
                 userEmail: currentUser.email,
@@ -540,7 +535,6 @@ function cargarMovimientosUsuario(userId) {
             const tx = docSnap.data();
             const isPositive = (tx.amount > 0);
             
-            // Guardamos los datos en atributos data-* para usarlos en el comprobante
             html += `
                 <div class="movement-item" 
                     data-title="${tx.title || 'Transacción'}" 
@@ -563,7 +557,6 @@ function cargarMovimientosUsuario(userId) {
 
         movementsContainer.innerHTML = html;
 
-        // Vincular el evento clic a cada movimiento para abrir la factura/comprobante
         document.querySelectorAll(".movement-item").forEach(item => {
             item.addEventListener("click", () => {
                 const title = item.getAttribute("data-title");
@@ -573,11 +566,9 @@ function cargarMovimientosUsuario(userId) {
                 const banco = item.getAttribute("data-banco");
                 const estado = item.getAttribute("data-estado");
 
-                // Si tienes un modal de factura en tu HTML, aquí lo rellenamos y mostramos:
                 const modalFactura = document.getElementById("transactionModal") || document.getElementById("modalFactura");
                 
                 if (modalFactura) {
-                    // Rellenar campos si existen en tu HTML
                     const fTitle = document.getElementById("modalTxTitle");
                     const fCategory = document.getElementById("modalTxCategory");
                     const fAmount = document.getElementById("modalTxAmount");
@@ -592,7 +583,6 @@ function cargarMovimientosUsuario(userId) {
 
                     modalFactura.classList.remove("hidden");
                 } else {
-                    // Alerta de respaldo por si el modal visual tiene otro ID en tu proyecto
                     alert(`Comprobante:\n${title}\nDetalle: ${category}\nMonto: $${amount}\nFecha: ${date}\nEstado: ${estado}`);
                 }
             });

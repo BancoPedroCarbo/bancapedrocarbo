@@ -597,3 +597,53 @@ function renderizarTarjetaHTML(tData, container, user, db) {
         <p style="color: var(--success, #22c55e); font-size: 0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check-circle"></i> Tu tarjeta virtual está activa y lista para usarse.</p>
     `;
 }
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const formTransferencia = document.getElementById("formTransferencia");
+const mensajeAsesorTransferencia = document.getElementById("mensajeAsesorTransferencia");
+const nuevaTransferenciaBtn = document.getElementById("nuevaTransferenciaBtn");
+
+if (formTransferencia) {
+    formTransferencia.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const cuenta = document.getElementById("txCuenta").value;
+        const cedula = document.getElementById("txCedula").value;
+        const monto = parseFloat(document.getElementById("txMonto").value);
+        const motivo = document.getElementById("txMotivo").value;
+
+        const user = auth.currentUser;
+        if (!user) return alert("Debes iniciar sesión.");
+
+        try {
+            // Guardar la transacción en Firestore para que el panel de administración/soporte la verifique
+            await addDoc(collection(db, "transacciones"), {
+                userId: user.uid,
+                userEmail: user.email,
+                numeroCuenta: cuenta,
+                cedulaDestino: cedula,
+                monto: monto,
+                motivo: motivo,
+                estado: "Pendiente de Verificación",
+                fecha: serverTimestamp()
+            });
+
+            // Ocultar el formulario y mostrar el aviso del asesor
+            formTransferencia.classList.add("hidden");
+            mensajeAsesorTransferencia.classList.remove("hidden");
+
+        } catch (error) {
+            console.error("Error al registrar transferencia:", error);
+            alert("Hubo un error al procesar la solicitud.");
+        }
+    });
+}
+
+// Botón para reiniciar el formulario y hacer otra transferencia
+if (nuevaTransferenciaBtn) {
+    nuevaTransferenciaBtn.addEventListener("click", () => {
+        formTransferencia.reset();
+        formTransferencia.classList.remove("hidden");
+        mensajeAsesorTransferencia.classList.add("hidden");
+    });
+}

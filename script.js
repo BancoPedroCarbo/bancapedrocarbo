@@ -1,3 +1,5 @@
+// script.js - Banco Pedro Carbo
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
     getAuth, 
@@ -45,6 +47,95 @@ function showToast(message, type = "success") {
     setTimeout(() => { toast.className = ""; }, 3000);
 }
 
+// Configuración de Cloudinary
+const cloudName = "dahwsdlhq";
+const uploadPreset = "music_unsigned";
+
+async function subirRostroACloudinary(imagenBase64, correoUsuario) {
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const formData = new FormData();
+    formData.append("file", imagenBase64);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("public_id", `rostros_${correoUsuario.replace(/[@.]/g, '_')}`);
+
+    try {
+        const respuesta = await fetch(url, { method: "POST", body: formData });
+        const datos = await respuesta.json();
+        if (datos.secure_url) {
+            return datos.secure_url;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error al subir a Cloudinary:", error);
+        return null;
+    }
+}
+
+// Variables globales para la cámara y captura facial
+let faceCapturedData = null;
+const loginFaceVideo = document.getElementById('loginFaceVideo');
+const loginFaceCanvas = document.getElementById('loginFaceCanvas');
+const btnScanFace = document.getElementById('btnScanFace');
+const faceScanOverlay = document.getElementById('faceScanOverlay');
+
+// Iniciar cámara frontal al cargar
+async function initCamera() {
+    try {
+        if (loginFaceVideo) {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+            });
+            loginFaceVideo.srcObject = stream;
+            await loginFaceVideo.play();
+        }
+    } catch (err) {
+        console.warn('No se pudo acceder a la cámara:', err);
+        if (faceScanOverlay) {
+            faceScanOverlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Permiso de cámara denegado';
+        }
+    }
+}
+initCamera();
+
+// Función de captura unificada (para clics y toques móviles)
+function ejecutarCapturaRostro() {
+    if (!loginFaceVideo || !loginFaceVideo.srcObject) {
+        showToast("La cámara no está activa.", "error");
+        return;
+    }
+
+    const context = loginFaceCanvas.getContext('2d');
+    const ancho = loginFaceVideo.videoWidth || 220;
+    const alto = loginFaceVideo.videoHeight || 160;
+
+    loginFaceCanvas.width = ancho;
+    loginFaceCanvas.height = alto;
+    context.drawImage(loginFaceVideo, 0, 0, ancho, alto);
+    
+    faceCapturedData = loginFaceCanvas.toDataURL('image/png');
+    
+    if (faceCapturedData && faceCapturedData.length > 100) {
+        if (faceScanOverlay) {
+            faceScanOverlay.innerHTML = '<i class="fa-solid fa-circle-check" style="font-size: 1.5rem; color: #22c55e;"></i><br>¡Rostro Capturado!';
+            faceScanOverlay.style.background = 'rgba(34, 197, 94, 0.25)';
+        }
+        showToast("¡Rostro capturado correctamente!");
+    } else {
+        showToast("Error al capturar imagen", "error");
+    }
+}
+
+if (btnScanFace) {
+    btnScanFace.addEventListener("click", (e) => {
+        e.preventDefault();
+        ejecutarCapturaRostro();
+    });
+    btnScanFace.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        ejecutarCapturaRostro();
+    });
+}
+
 // Control de pantallas Auth vs App
 const authScreen = document.getElementById("authScreen");
 const appScreen = document.getElementById("appScreen");
@@ -69,15 +160,29 @@ if (btnToLogin) {
     });
 }
 
-// Registro
+// Registro unificado con Firebase y Cloudinary
 if (registerView) {
     registerView.addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        if (!faceCapturedData) {
+            showToast("Debes capturar tu rostro para la verificación biométrica", "error");
+            return;
+        }
+
         const name = document.getElementById("regName").value;
         const email = document.getElementById("regEmail").value;
         const password = document.getElementById("regPassword").value;
 
+        showToast("Subiendo biometría a la nube...", "success");
+
         try {
+            const urlRostroCloudinary = await subirRostroACloudinary(faceCapturedData, email);
+            if (!urlRostroCloudinary) {
+                showToast("Error al guardar el rostro en Cloudinary", "error");
+                return;
+            }
+
             const userCred = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(userCred.user, { displayName: name });
             
@@ -85,6 +190,7 @@ if (registerView) {
                 nombre: name,
                 email: email,
                 saldo: 0.00,
+                rostroUrl: urlRostroCloudinary,
                 creado: serverTimestamp()
             });
 
@@ -376,38 +482,6 @@ if (storeForm) {
 
         const storeModal = document.getElementById("storeModal");
         if (storeModal) storeModal.classList.add("hidden");
-
-        const invDate = document.getElementById("invDate");
-        const invId = document.getElementById("invId");
-        const invClient = document.getElementById("invClient");
-        const invProduct = document.getElementById("invProduct");
-        const invTarget = document.getElementById("invTarget");
-        const invTotal = document.getElementById("invTotal");
-
-        if (invDate) invDate.textContent = txDate;
-        if (invId) invId.textContent = txRandomId;
-        if (invClient) invClient.textContent = currentUser ? (currentUser.displayName || "Cliente") : "Pedro Carbo";
-        if (invProduct) invProduct.textContent = selectedProduct.name;
-        if (invTarget) invTarget.textContent = targetValue;
-        if (invTotal) invTotal.textContent = selectedProduct.price.toFixed(2);
-
-        const invoiceModal = document.getElementById("invoiceModal");
-        if (invoiceModal) invoiceModal.classList.remove("hidden");
-    });
-}
-
-const btnCloseInvoice = document.getElementById("btnCloseInvoice");
-if (btnCloseInvoice) {
-    btnCloseInvoice.addEventListener("click", () => {
-        const invoiceModal = document.getElementById("invoiceModal");
-        if (invoiceModal) invoiceModal.classList.add("hidden");
-    });
-}
-
-const btnPrintInvoice = document.getElementById("btnPrintInvoice");
-if (btnPrintInvoice) {
-    btnPrintInvoice.addEventListener("click", () => {
-        window.print();
     });
 }
 
@@ -519,44 +593,7 @@ function cargarMovimientosUsuario(userId) {
         });
 
         movementsContainer.innerHTML = html;
-
-        document.querySelectorAll(".movement-item").forEach(item => {
-            item.addEventListener("click", () => {
-                const title = item.getAttribute("data-title");
-                const category = item.getAttribute("data-category");
-                const amount = parseFloat(item.getAttribute("data-amount"));
-                const date = item.getAttribute("data-date");
-                const txId = item.getAttribute("data-id");
-
-                mostrarFacturaMovimiento({
-                    title,
-                    category,
-                    amount,
-                    date,
-                    id: "BPC-" + txId.substring(0, 8).toUpperCase()
-                });
-            });
-        });
     });
-}
-
-function mostrarFacturaMovimiento(tx) {
-    const invDate = document.getElementById("invDate");
-    const invId = document.getElementById("invId");
-    const invClient = document.getElementById("invClient");
-    const invProduct = document.getElementById("invProduct");
-    const invTarget = document.getElementById("invTarget");
-    const invTotal = document.getElementById("invTotal");
-
-    if (invDate) invDate.textContent = tx.date;
-    if (invId) invId.textContent = tx.id;
-    if (invClient) invClient.textContent = currentUser ? (currentUser.displayName || "Cliente") : "Pedro Carbo";
-    if (invProduct) invProduct.textContent = tx.title;
-    if (invTarget) invTarget.textContent = tx.category;
-    if (invTotal) invTotal.textContent = Math.abs(tx.amount).toFixed(2);
-
-    const invoiceModal = document.getElementById("invoiceModal");
-    if (invoiceModal) invoiceModal.classList.remove("hidden");
 }
 
 // Detección de dispositivo (Móvil vs PC)
@@ -574,84 +611,3 @@ document.addEventListener("DOMContentLoaded", () => {
         body.classList.add("is-pc");
     }
 });
-// Función para subir la imagen del rostro en base64 a Cloudinary
-async function subirRostroACloudinary(imagenBase64, correoUsuario) {
-    const cloudName = "dahwsdlhq"; // Reemplaza con tu Cloud Name de Cloudinary
-    const uploadPreset = "music_unsigned"; // Reemplaza con tu Preset Unsigned
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-    const formData = new FormData();
-    formData.append("file", imagenBase64);
-    formData.append("upload_preset", uploadPreset);
-    // Identificador único para la imagen basado en el correo del usuario
-    formData.append("public_id", `rostros_${correoUsuario.replace(/[@.]/g, '_')}`);
-
-    try {
-        const respuesta = await fetch(url, {
-            method: "POST",
-            body: formData
-        });
-        const datos = await respuesta.json();
-        
-        if (datos.secure_url) {
-            console.log("¡Rostro guardado con éxito en Cloudinary:", datos.secure_url);
-            return datos.secure_url; // Esta es la URL segura de la imagen
-        } else {
-            console.error("Error devuelto por Cloudinary:", datos);
-            return null;
-        }
-    } catch (error) {
-        console.error("Error de red al subir a Cloudinary:", error);
-        return null;
-    }
-}
-
-// Lógica al enviar el formulario de Registro en script.js
-const registerForm = document.getElementById('registerForm');
-if (registerForm) {
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const nombre = document.getElementById('regName').value;
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-
-        // Nota: Asegúrate de capturar también el rostro del usuario durante el registro 
-        // si deseas guardarlo obligatoriamente (puedes usar la misma cámara del login).
-        // Ejemplo simulado de imagen capturada en base64:
-        const imagenRostroBase64 = window. rostroRegistroCapturado || ""; 
-
-        if (!imagenRostroBase64) {
-            alert("Por favor, captura tu rostro para el registro biométrico.");
-            return;
-        }
-
-        // 1. Subimos la foto a Cloudinary y obtenemos el enlace público
-        const urlRostroCloudinary = await subirRostroACloudinary(imagenRostroBase64, email);
-
-        if (!urlRostroCloudinary) {
-            alert("Hubo un error al guardar tu biometría facial en la nube. Inténtalo de nuevo.");
-            return;
-        }
-
-        // 2. Guardamos los datos del usuario (incluyendo la URL de Cloudinary) en el localStorage
-        const nuevoUsuario = {
-            nombre,
-            email,
-            password,
-            rostroUrl: urlRostroCloudinary,
-            saldo: 0.00
-        };
-
-        // Guardar en la base de datos local del navegador
-        let usuarios = JSON.parse(localStorage.getItem('banco_usuarios')) || [];
-        usuarios.push(nuevoUsuario);
-        localStorage.setItem('banco_usuarios', JSON.stringify(usuarios));
-
-        alert("¡Cuenta creada exitosamente con verificación facial en la nube!");
-        
-        // Cambiar automáticamente a la pantalla de login
-        document.getElementById('registerForm').classList.add('hidden');
-        document.getElementById('loginForm').classList.remove('hidden');
-    });
-}

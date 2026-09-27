@@ -152,14 +152,18 @@ function cargarTransferenciasPendientes() {
     const container = document.getElementById("adminPendingTransfers");
     if (!container) return;
 
+    console.log("Iniciando escucha de transferencias...");
     const q = query(collection(db, "transacciones"), orderBy("timestamp", "desc"));
+    
     onSnapshot(q, (snapshot) => {
+        console.log("¡Conexión exitosa! Total de transacciones en la BD:", snapshot.size);
         let html = "";
         let encontradas = 0;
 
         snapshot.forEach((docSnap) => {
             const tx = docSnap.data();
-            // Validamos que el estado coincida con exactitud
+            console.log(`Revisando TX ID: ${docSnap.id} | Estado actual: "${tx.estado}"`);
+            
             if (tx.estado === "Pendiente de verificación humana") {
                 encontradas++;
                 html += `
@@ -184,6 +188,25 @@ function cargarTransferenciasPendientes() {
             container.innerHTML = html;
         }
 
+        document.querySelectorAll(".aprobar-tx-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const txId = btn.getAttribute("data-id");
+                try {
+                    await updateDoc(doc(db, "transacciones", txId), {
+                        estado: "Completado",
+                        title: "Transferencia Externa Completada"
+                    });
+                    showToast("¡Transferencia aprobada exitosamente!");
+                } catch (err) {
+                    showToast("Error al aprobar la transferencia", "error");
+                }
+            });
+        });
+    }, (error) => {
+        console.error("ERROR CRÍTICO DE FIRESTORE:", error);
+        container.innerHTML = `<p style='color:var(--danger); text-align:center;'>Error de índice o permisos. Revisa la consola (F12).</p>`;
+    });
+}
         // Vincular los eventos a los botones generados dinámicamente
         document.querySelectorAll(".aprobar-tx-btn").forEach(btn => {
             btn.addEventListener("click", async () => {

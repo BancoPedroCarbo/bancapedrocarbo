@@ -385,3 +385,12 @@ body.is-mobile .form-control {
     padding: 0.85rem 1rem;
     font-size: 1rem; /* Evita que los iPhone/Android hagan zoom automático al enfocar inputs */
 }
+/* Ocultar todas las vistas por defecto */
+.section-view {
+    display: none;
+}
+
+/* Mostrar únicamente la vista que tenga la clase active */
+.section-view.active {
+    display: block; 
+}

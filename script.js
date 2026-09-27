@@ -1,4 +1,4 @@
-// script.js - Banco Pedro Carbo (Sin verificación de rostro)
+// script.js - Banco Pedro Carbo (Completo con cuentas, selección de bancos y comisión)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
@@ -19,7 +19,8 @@ import {
     onSnapshot, 
     serverTimestamp,
     query,
-    where      
+    where,
+    getDocs      
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -37,6 +38,7 @@ const db = getFirestore(app);
 
 let currentUser = null;
 let currentBalance = 0.00;
+let currentUserData = null;
 let selectedProduct = null;
 
 function showToast(message, type = "success") {
@@ -71,7 +73,7 @@ if (btnToLogin) {
     });
 }
 
-// Registro estándar con Firebase (Correo y Contraseña)
+// Registro con generación automática de número de cuenta único
 if (registerView) {
     registerView.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -79,6 +81,7 @@ if (registerView) {
         const name = document.getElementById("regName").value;
         const email = document.getElementById("regEmail").value;
         const password = document.getElementById("regPassword").value;
+        const numeroCuentaGenerado = "55" + Math.floor(10000000 + Math.random() * 90000000);
 
         try {
             const userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -87,11 +90,12 @@ if (registerView) {
             await setDoc(doc(db, "usuarios", userCred.user.uid), {
                 nombre: name,
                 email: email,
+                numeroCuenta: numeroCuentaGenerado,
                 saldo: 0.00,
                 creado: serverTimestamp()
             });
 
-            showToast("¡Cuenta creada con éxito!");
+            showToast("¡Cuenta creada con éxito! N° de cuenta asignado: " + numeroCuentaGenerado);
         } catch (err) {
             showToast(err.message, "error");
         }
@@ -142,7 +146,11 @@ onAuthStateChanged(auth, async (user) => {
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (userDoc.exists()) {
-                currentBalance = userDoc.data().saldo ?? 0.00;
+                currentUserData = userDoc.data();
+                currentBalance = currentUserData.saldo ?? 0.00;
+                
+                const accNumDisp = document.getElementById("userAccountNum");
+                if (accNumDisp) accNumDisp.textContent = `Cuenta: ${currentUserData.numeroCuenta || 'No asignada'}`;
             } else {
                 currentBalance = 0.00;
             }
@@ -158,6 +166,7 @@ onAuthStateChanged(auth, async (user) => {
 
     } else {
         currentUser = null;
+        currentUserData = null;
         if (appScreen) appScreen.classList.add("hidden");
         if (authScreen) authScreen.classList.remove("hidden");
     }
@@ -200,6 +209,104 @@ if (mobileMenu) {
     });
 }
 
+// ==========================================
+// TRANSFERENCIAS CON COMISIÓN Y DETECCIÓN DE BANCO
+// ==========================================
+const formTransferencia = document.getElementById("formTransferencia");
+
+if (formTransferencia) {
+    formTransferencia.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const selectBanco = document.getElementById("txBanco");
+        const bancoDestino = selectBanco ? selectBanco.value : "Banco Pedro Carbo";
+        
+        const cuentaDestino = document.getElementById("txCuenta").value.trim();
+        const cedulaDestino = document.getElementById("txCedula").value.trim();
+        const monto = parseFloat(document.getElementById("txMonto").value);
+        const motivo = document.getElementById("txMotivo").value;
+
+        if (!currentUser) {
+            showToast("Debes iniciar sesión", "error");
+            return;
+        }
+
+        // Lógica de comisiones: $0.50 si es otro banco, $0.00 si es Banco Pedro Carbo
+        let comision = (bancoDestino === "Banco Pedro Carbo") ? 0.00 : 0.50;
+        let montoTotalADebitar = monto + comision;
+
+        if (montoTotalADebitar > currentBalance) {
+            showToast(`Saldo insuficiente. Incluye $${comision.toFixed(2)} de comisión.`, "error");
+            return;
+        }
+
+        try {
+            let nombreBeneficiarioDetectado = "Tercero Externo";
+
+            // Si es de nuestro mismo banco, validamos y acreditamos al usuario interno
+            if (bancoDestino === "Banco Pedro Carbo") {
+                const qAccount = query(collection(db, "usuarios"), where("numeroCuenta", "==", cuentaDestino));
+                const querySnap = await getDocs(qAccount);
+
+                if (!querySnap.empty) {
+                    const beneficiarioDoc = querySnap.docs[0];
+                    const beneficiarioData = beneficiarioDoc.data();
+                    nombreBeneficiarioDetectado = beneficiarioData.nombre;
+
+                    // Evitar auto-transferencia a la misma cuenta
+                    if (beneficiarioDoc.id === currentUser.uid) {
+                        showToast("No puedes transferir fondos a tu propia cuenta.", "error");
+                        return;
+                    }
+
+                    // Acreditar saldo al destinatario interno
+                    const nuevoSaldoDestino = (beneficiarioData.saldo || 0) + monto;
+                    await setDoc(doc(db, "usuarios", beneficiarioDoc.id), { saldo: nuevoSaldoDestino }, { merge: true });
+
+                    // Registrar notificación/movimiento de ingreso al receptor
+                    await addDoc(collection(db, "transacciones"), {
+                        userId: beneficiarioDoc.id,
+                        userEmail: beneficiarioData.email,
+                        title: "Transferencia Recibida",
+                        category: `De: ${currentUserData ? currentUserData.nombre : 'Usuario'} (Cuenta: ${currentUserData ? currentUserData.numeroCuenta : ''})`,
+                        amount: monto,
+                        date: new Date().toLocaleString(),
+                        timestamp: serverTimestamp()
+                    });
+                } else {
+                    showToast("No se encontró ninguna cuenta activa en Banco Pedro Carbo con ese número.", "error");
+                    return;
+                }
+            }
+
+            // Descontar saldo total (monto + comisión) al emisor
+            currentBalance -= montoTotalADebitar;
+            updateBalanceUI();
+            await setDoc(doc(db, "usuarios", currentUser.uid), { saldo: currentBalance }, { merge: true });
+
+            // Registrar la transacción de salida para el usuario actual
+            await addDoc(collection(db, "transacciones"), {
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                title: `Transferencia a ${bancoDestino}`,
+                category: `Destino: ${cuentaDestino} (${nombreBeneficiarioDetectado}) - ${motivo}`,
+                amount: -montoTotalADebitar,
+                montoTransferido: monto,
+                comisionAplicada: comision,
+                banco: bancoDestino,
+                date: new Date().toLocaleString(),
+                timestamp: serverTimestamp()
+            });
+
+            formTransferencia.reset();
+            showToast(`¡Transferencia exitosa! Comisión aplicada: $${comision.toFixed(2)}`);
+        } catch (error) {
+            console.error("Error al procesar transferencia:", error);
+            showToast("Hubo un error al procesar la transferencia.", "error");
+        }
+    });
+}
+
 // Cargar productos de la tienda dinámicamente desde Firestore
 function cargarProductosTienda() {
     onSnapshot(collection(db, "productos_tienda"), (snapshot) => {
@@ -207,7 +314,7 @@ function cargarProductosTienda() {
         let claroHtml = "";
 
         const ffContainer = document.getElementById("ffProductsContainer");
-        const claroContainer = document.getElementById("claroProductsContainer");
+        const claroContainer = document.getElementById("claroContainer");
 
         if (snapshot.empty) {
             const emptyMsg = `<p style="color: var(--text-muted); grid-column: 1/-1;">No hay productos disponibles por el momento.</p>`;
@@ -281,56 +388,6 @@ function vincularBotonesTienda() {
     });
 }
 
-// Manejo de Transferencias Bancarias con validación de asesor
-const formTransferencia = document.getElementById("formTransferencia");
-const mensajeAsesorTransferencia = document.getElementById("mensajeAsesorTransferencia");
-const nuevaTransferenciaBtn = document.getElementById("nuevaTransferenciaBtn");
-
-if (formTransferencia) {
-    formTransferencia.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const cuenta = document.getElementById("txCuenta").value;
-        const cedula = document.getElementById("txCedula").value;
-        const monto = parseFloat(document.getElementById("txMonto").value);
-        const motivo = document.getElementById("txMotivo").value;
-
-        const user = auth.currentUser;
-        if (!user) return alert("Debes iniciar sesión.");
-
-        try {
-            await addDoc(collection(db, "transacciones"), {
-                userId: user.uid,
-                userEmail: user.email,
-                title: "Transferencia Bancaria",
-                category: `Cuenta: ${cuenta} (Cédula: ${cedula}) - ${motivo}`,
-                numeroCuenta: cuenta,
-                cedulaDestino: cedula,
-                amount: -monto,
-                motivo: motivo,
-                estado: "Pendiente de Verificación",
-                date: new Date().toLocaleString(),
-                timestamp: serverTimestamp()
-            });
-
-            formTransferencia.classList.add("hidden");
-            mensajeAsesorTransferencia.classList.remove("hidden");
-            showToast("¡Transferencia enviada a verificación!");
-        } catch (error) {
-            console.error("Error al registrar transferencia:", error);
-            showToast("Hubo un error al procesar la solicitud.", "error");
-        }
-    });
-}
-
-if (nuevaTransferenciaBtn) {
-    nuevaTransferenciaBtn.addEventListener("click", () => {
-        formTransferencia.reset();
-        formTransferencia.classList.remove("hidden");
-        mensajeAsesorTransferencia.classList.add("hidden");
-    });
-}
-
 // Lógica de Compra en Tienda y Facturación
 const closeStoreModal = document.getElementById("closeStoreModal");
 if (closeStoreModal) {
@@ -396,10 +453,8 @@ async function verificarYCargarTarjeta(user, db) {
         dynamicArea.innerHTML = `
             <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem;">
                 <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
-                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
-                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
-                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
-                </button>
+                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta activa.</p>
+                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">Solicitar Tarjeta Virtual</button>
             </div>
         `;
 

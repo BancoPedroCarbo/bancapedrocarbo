@@ -16,8 +16,8 @@ import {
     addDoc, 
     onSnapshot, 
     serverTimestamp,
-    query, 
-    where 
+    query,
+    where        
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -151,7 +151,7 @@ onAuthStateChanged(auth, async (user) => {
 
         cargarProductosTienda();
         cargarMovimientosUsuario(user.uid);
-        verificarYCargarTarjeta(user, db); // Carga la tarjeta virtual del usuario
+        verificarYCargarTarjeta(user, db);
 
     } else {
         currentUser = null;
@@ -197,7 +197,7 @@ if (mobileMenu) {
     });
 }
 
-// Cargar productos de la tienda
+// Cargar productos de la tienda dinámicamente desde Firestore
 function cargarProductosTienda() {
     onSnapshot(collection(db, "productos_tienda"), (snapshot) => {
         let ffHtml = "";
@@ -207,7 +207,7 @@ function cargarProductosTienda() {
         const claroContainer = document.getElementById("claroProductsContainer");
 
         if (snapshot.empty) {
-            const emptyMsg = `<p style="color: var(--text-muted); grid-column: 1/-1;">No hay productos disponibles.</p>`;
+            const emptyMsg = `<p style="color: var(--text-muted); grid-column: 1/-1;">No hay productos disponibles por el momento.</p>`;
             if (ffContainer) ffContainer.innerHTML = emptyMsg;
             if (claroContainer) claroContainer.innerHTML = emptyMsg;
             return;
@@ -229,12 +229,15 @@ function cargarProductosTienda() {
                 </div>
             `;
 
-            if (prod.type === "ff") { ffHtml += cardHTML; } 
-            else { claroHtml += cardHTML; }
+            if (prod.type === "ff") {
+                ffHtml += cardHTML;
+            } else {
+                claroHtml += cardHTML;
+            }
         });
 
-        if (ffContainer) ffContainer.innerHTML = ffHtml || '<p style="color: var(--text-muted);">No hay diamantes.</p>';
-        if (claroContainer) claroContainer.innerHTML = claroHtml || '<p style="color: var(--text-muted);">No hay recargas.</p>';
+        if (ffContainer) ffContainer.innerHTML = ffHtml || '<p style="color: var(--text-muted);">No hay diamantes disponibles.</p>';
+        if (claroContainer) claroContainer.innerHTML = claroHtml || '<p style="color: var(--text-muted);">No hay recargas disponibles.</p>';
 
         vincularBotonesTienda();
     });
@@ -275,7 +278,7 @@ function vincularBotonesTienda() {
     });
 }
 
-// Manejo de Transferencias Bancarias con aviso de asesor
+// Manejo de Transferencias Bancarias con validación de asesor
 const formTransferencia = document.getElementById("formTransferencia");
 const mensajeAsesorTransferencia = document.getElementById("mensajeAsesorTransferencia");
 const nuevaTransferenciaBtn = document.getElementById("nuevaTransferenciaBtn");
@@ -289,32 +292,30 @@ if (formTransferencia) {
         const monto = parseFloat(document.getElementById("txMonto").value);
         const motivo = document.getElementById("txMotivo").value;
 
-        if (monto <= 0) { showToast("Monto inválido", "error"); return; }
-        if (monto > currentBalance) { showToast("Fondos insuficientes en la cuenta", "error"); return; }
-
-        currentBalance -= monto;
-        updateBalanceUI();
+        const user = auth.currentUser;
+        if (!user) return alert("Debes iniciar sesión.");
 
         try {
-            await setDoc(doc(db, "usuarios", currentUser.uid), { saldo: currentBalance }, { merge: true });
-            
             await addDoc(collection(db, "transacciones"), {
-                userId: currentUser.uid,
-                userEmail: currentUser.email,
-                userName: currentUser.displayName || "Usuario",
+                userId: user.uid,
+                userEmail: user.email,
                 title: "Transferencia Bancaria",
-                category: `Cuenta: ${cuenta} | Cédula: ${cedula} | Motivo: ${motivo}`,
+                category: `Cuenta: ${cuenta} (Cédula: ${cedula}) - ${motivo}`,
+                numeroCuenta: cuenta,
+                cedulaDestino: cedula,
                 amount: -monto,
+                motivo: motivo,
+                estado: "Pendiente de Verificación",
                 date: new Date().toLocaleString(),
-                timestamp: serverTimestamp(),
-                estado: "Pendiente de Verificación"
+                timestamp: serverTimestamp()
             });
 
             formTransferencia.classList.add("hidden");
-            if (mensajeAsesorTransferencia) mensajeAsesorTransferencia.classList.remove("hidden");
-
-        } catch (err) {
-            showToast("Error al procesar la transferencia", "error");
+            mensajeAsesorTransferencia.classList.remove("hidden");
+            showToast("¡Transferencia enviada a verificación!");
+        } catch (error) {
+            console.error("Error al registrar transferencia:", error);
+            showToast("Hubo un error al procesar la solicitud.", "error");
         }
     });
 }
@@ -323,86 +324,11 @@ if (nuevaTransferenciaBtn) {
     nuevaTransferenciaBtn.addEventListener("click", () => {
         formTransferencia.reset();
         formTransferencia.classList.remove("hidden");
-        if (mensajeAsesorTransferencia) mensajeAsesorTransferencia.classList.add("hidden");
+        mensajeAsesorTransferencia.classList.add("hidden");
     });
 }
 
-// Tarjeta Virtual con Botón de Solicitud Inicial
-async function verificarYCargarTarjeta(user, dbRef) {
-    const dynamicArea = document.getElementById("tarjetaDynamicArea");
-    if (!dynamicArea) return;
-
-    const tarjetaRef = doc(dbRef, "tarjetas_virtuales", user.uid);
-    const tarjetaSnap = await getDoc(tarjetaRef);
-
-    if (tarjetaSnap.exists()) {
-        const tData = tarjetaSnap.data();
-        renderizarTarjetaHTML(tData, dynamicArea, user, dbRef);
-    } else {
-        dynamicArea.innerHTML = `
-            <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem; text-align: center;">
-                <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
-                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
-                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
-                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
-                </button>
-            </div>
-        `;
-
-        const btnSolicitar = document.getElementById("btnSolicitarTarjeta");
-        if (btnSolicitar) {
-            btnSolicitar.addEventListener("click", async () => {
-                const randomNum1 = Math.floor(1000 + Math.random() * 9000);
-                const randomNum2 = Math.floor(1000 + Math.random() * 9000);
-                const randomNum3 = Math.floor(1000 + Math.random() * 9000);
-                const numeroCompleto = `4829 ${randomNum1} ${randomNum2} ${randomNum3}`;
-                
-                const cvvAleatorio = Math.floor(100 + Math.random() * 900).toString();
-                const mesExp = String(Math.floor(1 + Math.random() * 12)).padStart(2, '0');
-                const anioExp = String(new Date().getFullYear() + 4).slice(-2);
-
-                const nuevaTarjeta = {
-                    numero: numeroCompleto,
-                    titular: user.displayName || "CLIENTE BANCO PEDRO CARBO",
-                    cvv: cvvAleatorio,
-                    expiracion: `${mesExp}/${anioExp}`,
-                    bloqueada: false
-                };
-
-                await setDoc(tarjetaRef, nuevaTarjeta);
-                renderizarTarjetaHTML(nuevaTarjeta, dynamicArea, user, dbRef);
-                showToast("¡Tarjeta virtual creada con éxito!");
-            });
-        }
-    }
-}
-
-function renderizarTarjetaHTML(tData, container, user, dbRef) {
-    container.innerHTML = `
-        <div class="card-preview" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: left; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); position: relative;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
-                <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: #60a5fa;"></i>
-            </div>
-            <div style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 1.5rem;">
-                ${tData.numero}
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
-                <div>
-                    <p style="font-size: 0.65rem; text-transform: uppercase;">Titular</p>
-                    <p style="color: white; font-weight: 600;">${tData.titular}</p>
-                </div>
-                <div>
-                    <p style="font-size: 0.65rem; text-transform: uppercase;">CVV / Exp</p>
-                    <p style="color: white; font-weight: 600;">${tData.cvv} / ${tData.expiracion}</p>
-                </div>
-            </div>
-        </div>
-        <p style="color: var(--success, #22c55e); font-size: 0.85rem; margin-top: 1rem; text-align: center;"><i class="fa-solid fa-check-circle"></i> Tu tarjeta virtual está activa y lista para usarse.</p>
-    `;
-}
-
-// Modales de tienda e historial
+// Lógica de Compra en Tienda y Facturación
 const closeStoreModal = document.getElementById("closeStoreModal");
 if (closeStoreModal) {
     closeStoreModal.addEventListener("click", () => {
@@ -450,6 +376,23 @@ if (storeForm) {
 
         const storeModal = document.getElementById("storeModal");
         if (storeModal) storeModal.classList.add("hidden");
+
+        const invDate = document.getElementById("invDate");
+        const invId = document.getElementById("invId");
+        const invClient = document.getElementById("invClient");
+        const invProduct = document.getElementById("invProduct");
+        const invTarget = document.getElementById("invTarget");
+        const invTotal = document.getElementById("invTotal");
+
+        if (invDate) invDate.textContent = txDate;
+        if (invId) invId.textContent = txRandomId;
+        if (invClient) invClient.textContent = currentUser ? (currentUser.displayName || "Cliente") : "Pedro Carbo";
+        if (invProduct) invProduct.textContent = selectedProduct.name;
+        if (invTarget) invTarget.textContent = targetValue;
+        if (invTotal) invTotal.textContent = selectedProduct.price.toFixed(2);
+
+        const invoiceModal = document.getElementById("invoiceModal");
+        if (invoiceModal) invoiceModal.classList.remove("hidden");
     });
 }
 
@@ -463,10 +406,87 @@ if (btnCloseInvoice) {
 
 const btnPrintInvoice = document.getElementById("btnPrintInvoice");
 if (btnPrintInvoice) {
-    btnPrintInvoice.addEventListener("click", () => { window.print(); });
+    btnPrintInvoice.addEventListener("click", () => {
+        window.print();
+    });
 }
 
-// Cargar movimientos del usuario
+// Gestión de Tarjeta Virtual
+async function verificarYCargarTarjeta(user, db) {
+    const dynamicArea = document.getElementById("tarjetaDynamicArea");
+    if (!dynamicArea) return;
+
+    const tarjetaRef = doc(db, "tarjetas_virtuales", user.uid);
+    const tarjetaSnap = await getDoc(tarjetaRef);
+
+    if (tarjetaSnap.exists()) {
+        const tData = tarjetaSnap.data();
+        renderizarTarjetaHTML(tData, dynamicArea, user, db);
+    } else {
+        dynamicArea.innerHTML = `
+            <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
+                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
+                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
+                </button>
+            </div>
+        `;
+
+        const btnSol = document.getElementById("btnSolicitarTarjeta");
+        if (btnSol) {
+            btnSol.addEventListener("click", async () => {
+                const randomNum1 = Math.floor(1000 + Math.random() * 9000);
+                const randomNum2 = Math.floor(1000 + Math.random() * 9000);
+                const randomNum3 = Math.floor(1000 + Math.random() * 9000);
+                const numeroCompleto = `4829 ${randomNum1} ${randomNum2} ${randomNum3}`;
+                
+                const cvvAleatorio = Math.floor(100 + Math.random() * 900).toString();
+                const mesExp = String(Math.floor(1 + Math.random() * 12)).padStart(2, '0');
+                const anioExp = String(new Date().getFullYear() + 4).slice(-2);
+
+                const nuevaTarjeta = {
+                    numero: numeroCompleto,
+                    titular: user.displayName || "CLIENTE BANCO PEDRO CARBO",
+                    cvv: cvvAleatorio,
+                    expiracion: `${mesExp}/${anioExp}`,
+                    bloqueada: false
+                };
+
+                await setDoc(tarjetaRef, nuevaTarjeta);
+                renderizarTarjetaHTML(nuevaTarjeta, dynamicArea, user, db);
+                showToast("¡Tarjeta virtual creada con éxito!");
+            });
+        }
+    }
+}
+
+function renderizarTarjetaHTML(tData, container, user, db) {
+    container.innerHTML = `
+        <div class="card-preview" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: left; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
+                <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: #60a5fa;"></i>
+            </div>
+            <div style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 1.5rem;">
+                ${tData.numero}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                <div>
+                    <p style="font-size: 0.65rem; text-transform: uppercase;">Titular</p>
+                    <p style="color: white; font-weight: 600;">${tData.titular}</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.65rem; text-transform: uppercase;">CVV / Exp</p>
+                    <p style="color: white; font-weight: 600;">${tData.cvv} / ${tData.expiracion}</p>
+                </div>
+            </div>
+        </div>
+        <p style="color: var(--success, #22c55e); font-size: 0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check-circle"></i> Tu tarjeta virtual está activa y lista para usarse.</p>
+    `;
+}
+
+// Historial de Movimientos
 function cargarMovimientosUsuario(userId) {
     const movementsContainer = document.getElementById("userMovementsList");
     if (!movementsContainer) return;
@@ -483,16 +503,16 @@ function cargarMovimientosUsuario(userId) {
 
         snapshot.forEach((docSnap) => {
             const tx = docSnap.data();
-            const isPositive = tx.amount > 0;
+            const isPositive = (tx.amount > 0);
             
             html += `
-                <div class="movement-item" data-title="${tx.title}" data-category="${tx.category}" data-amount="${tx.amount}" data-date="${tx.date}" data-id="${docSnap.id}" style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.2s;">
+                <div class="movement-item" data-title="${tx.title || 'Transacción'}" data-category="${tx.category || ''}" data-amount="${tx.amount || 0}" data-date="${tx.date || 'Fecha no disponible'}" data-id="${docSnap.id}" style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.2s;">
                     <div>
-                        <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title}</h4>
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">${tx.category} • ${tx.date}</p>
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title || 'Transacción'} <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem; color: var(--text-muted); margin-left: 0.5rem;"></i></h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">${tx.category || ''} • ${tx.date || ''}</p>
                     </div>
                     <div style="font-size: 1rem; font-weight: bold; color: ${isPositive ? 'var(--success)' : 'var(--danger)'};">
-                        ${isPositive ? '+' : ''}$${Math.abs(tx.amount).toFixed(2)}
+                        ${isPositive ? '+' : ''}$${Math.abs(tx.amount || 0).toFixed(2)}
                     </div>
                 </div>
             `;
@@ -502,12 +522,18 @@ function cargarMovimientosUsuario(userId) {
 
         document.querySelectorAll(".movement-item").forEach(item => {
             item.addEventListener("click", () => {
+                const title = item.getAttribute("data-title");
+                const category = item.getAttribute("data-category");
+                const amount = parseFloat(item.getAttribute("data-amount"));
+                const date = item.getAttribute("data-date");
+                const txId = item.getAttribute("data-id");
+
                 mostrarFacturaMovimiento({
-                    title: item.getAttribute("data-title"),
-                    category: item.getAttribute("data-category"),
-                    amount: parseFloat(item.getAttribute("data-amount")),
-                    date: item.getAttribute("data-date"),
-                    id: "BPC-" + item.getAttribute("data-id").substring(0, 8).toUpperCase()
+                    title,
+                    category,
+                    amount,
+                    date,
+                    id: "BPC-" + txId.substring(0, 8).toUpperCase()
                 });
             });
         });
@@ -532,3 +558,19 @@ function mostrarFacturaMovimiento(tx) {
     const invoiceModal = document.getElementById("invoiceModal");
     if (invoiceModal) invoiceModal.classList.remove("hidden");
 }
+
+// Detección de dispositivo (Móvil vs PC)
+document.addEventListener("DOMContentLoaded", () => {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const body = document.body;
+
+    if (/android/i.test(userAgent)) {
+        body.classList.add("is-android", "is-mobile");
+    } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        body.classList.add("is-ios", "is-mobile");
+    } else if (/Mobi|Android/i.test(userAgent)) {
+        body.classList.add("is-mobile");
+    } else {
+        body.classList.add("is-pc");
+    }
+});

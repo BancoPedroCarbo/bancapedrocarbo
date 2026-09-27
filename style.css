@@ -245,6 +245,7 @@ body {
     flex: 1;
 }
 
+/* Vistas de la Aplicación */
 .section-view {
     display: none;
 }
@@ -286,6 +287,7 @@ body {
     padding: 1rem;
 }
 
+/* Notificaciones Toast */
 #toast {
     position: fixed;
     bottom: 2rem;
@@ -314,24 +316,6 @@ body {
     border-left: 4px solid var(--danger);
 }
 
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-    }
-    .sidebar.open {
-        transform: translateX(0);
-    }
-    .main-content {
-        margin-left: 0;
-    }
-}
-/* --- ESTILOS BASE GENERALES --- */
-body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #0f172a;
-    color: #f8fafc;
-}
-
 /* --- ESTILOS EXCLUSIVOS PARA PC (Escritorio) --- */
 body.is-pc .app-layout {
     display: flex;
@@ -351,10 +335,8 @@ body.is-pc .main-content {
     padding: 2.5rem;
 }
 
-
 /* --- ESTILOS EXCLUSIVOS PARA ANDROID / MÓVIL --- */
 body.is-mobile {
-    /* Evita el rebote elástico típico de los navegadores móviles al hacer scroll */
     overscroll-behavior-y: none;
 }
 
@@ -375,7 +357,6 @@ body.is-mobile .main-content {
     padding: 1rem;
 }
 
-/* Botones y inputs más grandes y cómodos para pantallas táctiles en Android */
 body.is-mobile .btn {
     padding: 0.9rem 1rem;
     font-size: 1rem;
@@ -383,14 +364,18 @@ body.is-mobile .btn {
 
 body.is-mobile .form-control {
     padding: 0.85rem 1rem;
-    font-size: 1rem; /* Evita que los iPhone/Android hagan zoom automático al enfocar inputs */
-}
-/* Ocultar todas las vistas por defecto */
-.section-view {
-    display: none;
+    font-size: 1rem; /* Evita zoom automático en inputs en iOS/Android */
 }
 
-/* Mostrar únicamente la vista que tenga la clase active */
-.section-view.active {
-    display: block; 
+/* Media Queries Generales (Fallback responsive) */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    .main-content {
+        margin-left: 0;
+    }
 }

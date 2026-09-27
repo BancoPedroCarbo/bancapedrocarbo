@@ -1,8 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
     getAuth, 
-    onAuthStateChanged, 
-    signOut 
+    onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
     getFirestore, 
@@ -10,6 +9,7 @@ import {
     doc, 
     getDoc, 
     setDoc, 
+    updateDoc,
     getDocs, 
     addDoc, 
     query, 
@@ -35,16 +35,17 @@ const db = getFirestore(app);
 onAuthStateChanged(auth, (user) => {
     if (!user || user.email !== "adminbanco@pc.com") {
         alert("Acceso denegado. Esta área es exclusiva para el administrador (adminbanco@pc.com).");
-        window.location.href = "index.html"; // Redirige a la banca normal si no es el admin
+        window.location.href = "index.html";
     } else {
-        // Si es el admin correcto, carga el panel
         cargarUsuariosSelect();
         cargarTransaccionesAdmin();
+        cargarTransferenciasPendientes();
     }
 });
 
 function showToast(message, type = "success") {
     const toast = document.getElementById("toast");
+    if (!toast) return;
     toast.textContent = message;
     toast.className = `show ${type}`;
     setTimeout(() => { toast.className = ""; }, 3000);
@@ -53,6 +54,7 @@ function showToast(message, type = "success") {
 // Cargar lista de usuarios en el selector del panel admin
 async function cargarUsuariosSelect() {
     const select = document.getElementById("adminSelectUser");
+    if (!select) return;
     try {
         const querySnapshot = await getDocs(collection(db, "usuarios"));
         let options = '<option value="">Seleccione un usuario...</option>';
@@ -66,8 +68,8 @@ async function cargarUsuariosSelect() {
     }
 }
 
-// Modificar saldo de usuario (Agregar o Quitar dinero) y crear movimiento real
-document.getElementById("adminBalanceForm").addEventListener("submit", async (e) => {
+// Modificar saldo de usuario (Agregar o Quitar dinero)
+document.getElementById("adminBalanceForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const userId = document.getElementById("adminSelectUser").value;
     const action = document.getElementById("adminActionType").value;
@@ -102,10 +104,8 @@ document.getElementById("adminBalanceForm").addEventListener("submit", async (e)
 
         let nuevoSaldo = currentSaldo + finalAmount;
 
-        // Actualizar saldo en la cuenta del usuario
         await setDoc(userRef, { saldo: nuevoSaldo }, { merge: true });
 
-        // Crear el movimiento real en la colección global de transacciones
         await addDoc(collection(db, "transacciones"), {
             userId: userId,
             userEmail: userSnap.data().email,
@@ -126,7 +126,7 @@ document.getElementById("adminBalanceForm").addEventListener("submit", async (e)
 });
 
 // Registrar nuevo producto en la tienda
-document.getElementById("adminAddProductForm").addEventListener("submit", async (e) => {
+document.getElementById("adminAddProductForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("adminProdName").value;
     const price = parseFloat(document.getElementById("adminProdPrice").value);
@@ -146,8 +146,61 @@ document.getElementById("adminAddProductForm").addEventListener("submit", async 
     }
 });
 
+// Cargar transferencias pendientes de verificación humana
+function cargarTransferenciasPendientes() {
+    const container = document.getElementById("adminPendingTransfers");
+    if (!container) return;
+
+    const q = query(collection(db, "transacciones"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        let html = "";
+        let count = 0;
+
+        snapshot.forEach((docSnap) => {
+            const tx = docSnap.data();
+            if (tx.estado === "Pendiente de verificación humana") {
+                count++;
+                html += `
+                    <div style="background: var(--bg-dark); padding: 0.85rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+                        <div>
+                            <strong style="color: var(--primary);">${tx.userName || tx.userEmail || 'Usuario'}</strong><br>
+                            <span>${tx.title}</span><br>
+                            <span style="color: var(--text-muted);">${tx.category} • ${tx.date}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-weight: bold; color: var(--danger);">-$${Math.abs(tx.amount).toFixed(2)}</span><br>
+                            <button class="btn aprobar-tx-btn" data-id="${docSnap.id}" style="margin-top: 0.4rem; padding: 0.3rem 0.8rem; font-size: 0.75rem; width: auto;">Aprobar / Completar</button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        container.innerHTML = html || "<p style='color:var(--text-muted); text-align:center;'>No hay transferencias pendientes de verificación.</p>";
+
+        // Vincular botones de aprobación
+        document.querySelectorAll(".aprobar-tx-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const txId = btn.getAttribute("data-id");
+                try {
+                    await updateDoc(doc(db, "transacciones", txId), {
+                        estado: "Completado",
+                        title: "Transferencia Externa Completada"
+                    });
+                    showToast("¡Transferencia aprobada exitosamente!");
+                } catch (err) {
+                    showToast("Error al aprobar la transferencia", "error");
+                }
+            });
+        });
+    });
+}
+
 // Escuchar transacciones y movimientos reales en tiempo real
 function cargarTransaccionesAdmin() {
+    const container = document.getElementById("adminLiveTransactions");
+    if (!container) return;
+
     const q = query(collection(db, "transacciones"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         let html = "";
@@ -159,14 +212,14 @@ function cargarTransaccionesAdmin() {
                     <div>
                         <strong style="color: var(--primary);">${tx.userName || 'Usuario'}</strong> (${tx.userEmail})<br>
                         <span>${tx.title}</span><br>
-                        <small style="color: var(--text-muted);">${tx.category} • ${tx.date}</small>
+                        <small style="color: var(--text-muted);">${tx.category} • ${tx.date} • Estado: <b>${tx.estado || 'Completado'}</b></small>
                     </div>
-                    <div class="tx-amount ${isPositive ? 'positive' : 'negative'}">
+                    <div class="tx-amount ${isPositive ? 'positive' : 'negative'}" style="color: ${isPositive ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
                         ${isPositive ? '+' : ''}$${Math.abs(tx.amount).toFixed(2)}
                     </div>
                 </div>
             `;
         });
-        document.getElementById("adminLiveTransactions").innerHTML = html || "<p style='color:var(--text-muted); text-align:center;'>No hay movimientos registrados aún.</p>";
+        container.innerHTML = html || "<p style='color:var(--text-muted); text-align:center;'>No hay movimientos registrados aún.</p>";
     });
 }

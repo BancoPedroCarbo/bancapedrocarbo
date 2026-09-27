@@ -14,7 +14,7 @@
         <header style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h2><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> Panel Admin - Banco Pedro Carbo</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Gestión de saldos ($0.00 iniciales), productos y transacciones reales</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Gestión de saldos, productos, verificación de transferencias y auditoría</p>
             </div>
             <a href="index.html" class="btn" style="width: auto; padding: 0.6rem 1rem; background: var(--bg-card-hover);"><i class="fa-solid fa-arrow-left"></i> Ir a la Banca</a>
         </header>
@@ -74,6 +74,15 @@
                 </form>
             </div>
 
+        </div>
+
+        <!-- VERIFICACIÓN DE TRANSFERENCIAS EXTERNAS PENDIENTES -->
+        <div class="card-box" style="margin-top: 2rem;">
+            <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--warning, #f59e0b);"></i> Transferencias Externas Pendientes (Verificación Humana)</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Aprueba o completa las transferencias interbancarias enviadas por los usuarios.</p>
+            <div id="adminPendingTransfers" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                <p style="color: var(--text-muted); text-align: center;">Cargando transferencias pendientes...</p>
+            </div>
         </div>
 
         <!-- AUDITORÍA GLOBAL DE MOVIMIENTOS -->

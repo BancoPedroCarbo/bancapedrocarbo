@@ -31,10 +31,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// CANDADO DE SEGURIDAD EXCLUSIVO PARA EL ADMIN
+// CANDADO DE SEGURIDAD EXCLUSIVO PARA EL ADMIN Y SOPORTE
 onAuthStateChanged(auth, (user) => {
-    if (!user || user.email !== "adminbanco@pc.com") {
-        alert("Acceso denegado. Esta área es exclusiva para el administrador (adminbanco@pc.com).");
+    if (!user || (user.email !== "adminbanco@pc.com" && user.email !== "soporte@bancopedrocarbo.com")) {
+        alert("Acceso denegado. Esta área es exclusiva para el personal autorizado.");
         window.location.href = "index.html";
     } else {
         cargarUsuariosSelect();
@@ -60,7 +60,7 @@ async function cargarUsuariosSelect() {
         let options = '<option value="">Seleccione un usuario...</option>';
         querySnapshot.forEach((docSnap) => {
             const user = docSnap.data();
-            options += `<option value="${docSnap.id}">${user.nombre} (${user.email}) - Saldo: $${(user.saldo ?? 0).toFixed(2)}</option>`;
+            options += `<option value="${docSnap.id}">${user.nombre || 'Sin Nombre'} (${user.email}) - Saldo: $${(user.saldo ?? 0).toFixed(2)}</option>`;
         });
         select.innerHTML = options;
     } catch (e) {
@@ -114,7 +114,8 @@ document.getElementById("adminBalanceForm")?.addEventListener("submit", async (e
             category: "Gestión Administrativa",
             amount: finalAmount,
             date: new Date().toLocaleString(),
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            estado: "Completado"
         });
 
         showToast("¡Saldo actualizado y movimiento registrado con éxito!");
@@ -154,14 +155,15 @@ function cargarTransferenciasPendientes() {
     const q = query(collection(db, "transacciones"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         let html = "";
-        let count = 0;
+        let encontradas = 0;
 
         snapshot.forEach((docSnap) => {
             const tx = docSnap.data();
+            // Validamos que el estado coincida con exactitud
             if (tx.estado === "Pendiente de verificación humana") {
-                count++;
+                encontradas++;
                 html += `
-                    <div style="background: var(--bg-dark); padding: 0.85rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+                    <div style="background: var(--bg-dark); padding: 0.85rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); margin-bottom: 0.5rem;">
                         <div>
                             <strong style="color: var(--primary);">${tx.userName || tx.userEmail || 'Usuario'}</strong><br>
                             <span>${tx.title}</span><br>
@@ -169,16 +171,20 @@ function cargarTransferenciasPendientes() {
                         </div>
                         <div style="text-align: right;">
                             <span style="font-weight: bold; color: var(--danger);">-$${Math.abs(tx.amount).toFixed(2)}</span><br>
-                            <button class="btn aprobar-tx-btn" data-id="${docSnap.id}" style="margin-top: 0.4rem; padding: 0.3rem 0.8rem; font-size: 0.75rem; width: auto;">Aprobar / Completar</button>
+                            <button class="btn aprobar-tx-btn" data-id="${docSnap.id}" style="margin-top: 0.4rem; padding: 0.3rem 0.8rem; font-size: 0.75rem; width: auto; background: var(--success, #10b981);">Aprobar / Completar</button>
                         </div>
                     </div>
                 `;
             }
         });
 
-        container.innerHTML = html || "<p style='color:var(--text-muted); text-align:center;'>No hay transferencias pendientes de verificación.</p>";
+        if (encontradas === 0) {
+            container.innerHTML = "<p style='color:var(--text-muted); text-align:center;'>No hay transferencias pendientes de verificación.</p>";
+        } else {
+            container.innerHTML = html;
+        }
 
-        // Vincular botones de aprobación
+        // Vincular los eventos a los botones generados dinámicamente
         document.querySelectorAll(".aprobar-tx-btn").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const txId = btn.getAttribute("data-id");
@@ -193,10 +199,13 @@ function cargarTransferenciasPendientes() {
                 }
             });
         });
+    }, (error) => {
+        console.error("Error al escuchar transferencias pendientes:", error);
+        container.innerHTML = "<p style='color:var(--danger); text-align:center;'>Error al cargar transferencias. Revisa los índices de Firestore.</p>";
     });
 }
 
-// Escuchar transacciones y movimientos reales en tiempo real
+// Escuchar auditoría de transacciones y movimientos reales en tiempo real
 function cargarTransaccionesAdmin() {
     const container = document.getElementById("adminLiveTransactions");
     if (!container) return;
@@ -208,18 +217,21 @@ function cargarTransaccionesAdmin() {
             const tx = docSnap.data();
             const isPositive = tx.amount > 0;
             html += `
-                <div class="transaction-item" style="background: var(--bg-dark); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                <div class="transaction-item" style="background: var(--bg-dark); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                     <div>
-                        <strong style="color: var(--primary);">${tx.userName || 'Usuario'}</strong> (${tx.userEmail})<br>
+                        <strong style="color: var(--primary);">${tx.userName || 'Usuario'}</strong> (${tx.userEmail || 'Sin email'})<br>
                         <span>${tx.title}</span><br>
                         <small style="color: var(--text-muted);">${tx.category} • ${tx.date} • Estado: <b>${tx.estado || 'Completado'}</b></small>
                     </div>
-                    <div class="tx-amount ${isPositive ? 'positive' : 'negative'}" style="color: ${isPositive ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
+                    <div class="tx-amount" style="color: ${isPositive ? 'var(--success, #10b981)' : 'var(--danger, #ef4444)'}; font-weight: bold;">
                         ${isPositive ? '+' : ''}$${Math.abs(tx.amount).toFixed(2)}
                     </div>
                 </div>
             `;
         });
         container.innerHTML = html || "<p style='color:var(--text-muted); text-align:center;'>No hay movimientos registrados aún.</p>";
+    }, (error) => {
+        console.error("Error al escuchar transacciones globales:", error);
+        container.innerHTML = "<p style='color:var(--danger); text-align:center;'>Error al cargar transacciones.</p>";
     });
 }

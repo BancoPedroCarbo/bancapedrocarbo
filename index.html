@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Banco Pedro Carbo - Banca Móvil</title>
+    <!-- Enlace para PWA (Instalable) -->
+    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -73,7 +75,6 @@
                 <li><a class="menu-item" data-target="section-store"><i class="fa-solid fa-gem"></i> Tienda & Recargas</a></li>
                 <li><a class="menu-item" data-target="section-cards"><i class="fa-solid fa-credit-card"></i> Tarjetas</a></li>
                 <li><a class="menu-item" data-target="section-movements"><i class="fa-solid fa-clock-rotate-left"></i> Movimientos</a></li>
-                <!-- NUEVO: Botón de Términos y Condiciones abajo en el menú -->
                 <li><a class="menu-item" data-target="section-terminos"><i class="fa-solid fa-file-contract"></i> Términos Legales</a></li>
             </ul>
         </aside>
@@ -99,14 +100,12 @@
                 <!-- SECCIÓN: INICIO / DASHBOARD -->
                 <div id="section-dashboard" class="section-view active">
                     <div class="dashboard-grid">
-                        <!-- Tarjeta de Saldo Principal -->
                         <div class="card-box balance-card">
                             <p style="color: var(--text-muted); font-size: 0.85rem;">Saldo Disponible</p>
                             <h1 id="dashBalance" style="font-size: 2.2rem; margin: 0.5rem 0; letter-spacing: -1px;">$0.00</h1>
                             <p style="font-size: 0.8rem; color: var(--success);"><i class="fa-solid fa-shield-check"></i> Cuenta Activa en Tiempo Real</p>
                         </div>
 
-                        <!-- Tarjeta de Acceso Rápido / Info -->
                         <div class="card-box" style="display: flex; flex-direction: column; justify-content: center;">
                             <h3>Bienvenido a tu Banca Móvil</h3>
                             <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Administra tus fondos de forma segura, realiza transferencias o adquiere diamantes y recargas de manera instantánea en Pedro Carbo.</p>
@@ -144,7 +143,6 @@
                             <button type="submit" class="btn" style="margin-top: 1rem;"><i class="fa-solid fa-paper-plane"></i> Transferir Fondos</button>
                         </form>
 
-                        <!-- Mensaje de espera oculto por defecto -->
                         <div id="mensajeAsesorTransferencia" class="hidden" style="text-align: center; padding: 2.5rem 1rem;">
                             <i class="fa-solid fa-hourglass-half fa-spin" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
                             <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem; text-transform: uppercase;">¡Transferencia en Proceso!</h4>
@@ -203,7 +201,7 @@
                     </div>
                 </div>
 
-                <!-- NUEVA SECCIÓN: TÉRMINOS Y CONDICIONES -->
+                <!-- SECCIÓN: TÉRMINOS Y CONDICIONES -->
                 <div id="section-terminos" class="section-view">
                     <div class="card-box" style="max-width: 800px; margin: 0 auto; line-height: 1.6; padding: 2.5rem;">
                         <div style="text-align: center; margin-bottom: 2rem;">
@@ -298,6 +296,17 @@
 
     <!-- TOAST NOTIFICACIONES -->
     <div id="toast">Operación exitosa</div>
+
+    <!-- Registro del Service Worker para habilitar la instalación PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((reg) => console.log('Service Worker registrado con éxito:', reg.scope))
+            .catch((err) => console.log('Error al registrar el Service Worker:', err));
+        });
+      }
+    </script>
 
     <!-- SCRIPT PRINCIPAL -->
     <script type="module" src="script.js"></script>

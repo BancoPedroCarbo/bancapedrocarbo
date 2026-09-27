@@ -21,7 +21,7 @@
                 <p>Tu banca digital segura</p>
             </div>
 
-            <!-- Formulario de Login con Verificación Facial y Clave -->
+            <!-- Formulario de Login -->
             <form id="loginForm">
                 <div class="form-group">
                     <label>Correo Electrónico</label>
@@ -30,21 +30,6 @@
                 <div class="form-group">
                     <label>Contraseña</label>
                     <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
-                </div>
-
-                <!-- Verificación Biométrica Facial para el Login -->
-                <div class="form-group" style="text-align: center; margin-top: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem;">Verificación Biométrica Facial</label>
-                    <div style="position: relative; width: 100%; max-width: 220px; height: 160px; margin: 0 auto; background: #000; border-radius: 0.75rem; overflow: hidden; border: 2px solid var(--primary);">
-                        <video id="loginFaceVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
-                        <canvas id="loginFaceCanvas" style="display: none;"></canvas>
-                        <div id="faceScanOverlay" style="position: absolute; inset: 0; border: 2px dashed rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; background: rgba(0,0,0,0.3); padding: 0.5rem; text-align: center;">
-                            <i class="fa-solid fa-face-smile" style="font-size: 1.5rem; margin-right: 0.3rem;"></i> Enfoca tu rostro
-                        </div>
-                    </div>
-                    <button type="button" id="btnScanFace" class="btn" style="margin-top: 0.5rem; background: var(--bg-card-hover); font-size: 0.8rem; padding: 0.4rem 0.8rem; max-width: 180px; margin-left: auto; margin-right: auto;">
-                        <i class="fa-solid fa-camera"></i> Capturar Rostro
-                    </button>
                 </div>
 
                 <button type="submit" class="btn" style="margin-top: 1rem;">Iniciar Sesión</button>
@@ -67,7 +52,7 @@
                 </div>
                 
                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">
-                    Al registrarte, aceptas que los depósitos y retiros se realizan exclusivamente mediante persona física autorizada en Pedro Carbo.
+                    Al registrarte, se te asignará automáticamente un número de cuenta único y aceptas los términos operativos locales.
                 </div>
 
                 <button type="submit" class="btn">Crear Cuenta ($0.00 inicial)</button>
@@ -103,7 +88,10 @@
                 </div>
                 <div class="user-profile">
                     <div class="avatar" id="userAvatar">PC</div>
-                    <span id="userNameDisplay" style="font-weight: 600; font-size: 0.9rem;">Cargando...</span>
+                    <div style="display: flex; flex-direction: column;">
+                        <span id="userNameDisplay" style="font-weight: 600; font-size: 0.9rem;">Cargando...</span>
+                        <span id="userAccountNum" style="font-size: 0.7rem; color: var(--text-muted);">Cuenta: --</span>
+                    </div>
                     <button id="btnLogout" title="Cerrar Sesión" style="background: none; border: none; color: var(--danger); cursor: pointer; margin-left: 0.5rem;"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
             </header>
@@ -119,7 +107,7 @@
                         </div>
                         <div class="card-box" style="display: flex; flex-direction: column; justify-content: center;">
                             <h3>Bienvenido a tu Banca Móvil</h3>
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Administra tus fondos de forma segura, realiza transferencias o adquiere diamantes y recargas de manera instantánea en Pedro Carbo.</p>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Administra tus fondos de forma segura, realiza transferencias interbancarias o adquiere diamantes y recargas de manera instantánea en Pedro Carbo.</p>
                         </div>
                     </div>
                 </div>
@@ -128,12 +116,22 @@
                 <div id="section-transfer" class="section-view">
                     <div class="card-box" style="max-width: 550px; margin: 0 auto; padding: 2rem;">
                         <h3><i class="fa-solid fa-right-left"></i> Realizar Transferencia</h3>
-                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Ingresa los datos del destinatario para procesar tu envío.</p>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Las transferencias al Banco Pedro Carbo son automáticas y gratuitas. A otros bancos aplican $0.50 de comisión.</p>
 
                         <form id="formTransferencia">
                             <div class="form-group">
+                                <label for="txBanco">Banco Destino</label>
+                                <select id="txBanco" class="form-control" required>
+                                    <option value="Banco Pedro Carbo">Banco Pedro Carbo (Propio)</option>
+                                    <option value="Banco Guayaquil">Banco Guayaquil</option>
+                                    <option value="Banco Pichincha">Banco Pichincha</option>
+                                    <option value="Produbanco">Produbanco</option>
+                                    <option value="Banco Pacífico">Banco Pacífico</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label>Número de Cuenta Destino</label>
-                                <input type="text" id="txCuenta" class="form-control" placeholder="Ej. 4002918273" required>
+                                <input type="text" id="txCuenta" class="form-control" placeholder="Ej. 5512345678" required>
                             </div>
                             <div class="form-group">
                                 <label>Cédula / RUC del Destinatario</label>
@@ -170,7 +168,7 @@
                         <p style="color: var(--text-muted);">Cargando diamantes...</p>
                     </div>
                     <h4 style="margin-bottom: 1rem;">Recargas Claro</h4>
-                    <div id="claroProductsContainer" class="dashboard-grid">
+                    <div id="claroContainer" class="dashboard-grid">
                         <p style="color: var(--text-muted);">Cargando recargas...</p>
                     </div>
                 </div>

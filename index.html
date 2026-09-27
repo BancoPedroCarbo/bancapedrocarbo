@@ -149,34 +149,24 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN: TARJETAS -->
-                <div id="section-cards" class="section-view">
-                    <div class="card-box" style="max-width: 450px; margin: 0 auto; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid var(--border);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <span style="font-weight: bold; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
-                            <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: var(--primary);"></i>
-                        </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <p style="font-size: 0.75rem; color: var(--text-muted);">NÚMERO DE TARJETA</p>
-                            <h3 id="vcNumber" style="letter-spacing: 2px; font-family: monospace;">4829 •••• •••• 9214</h3>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <div>
-                                <p style="font-size: 0.75rem; color: var(--text-muted);">TITULAR</p>
-                                <span id="vcHolder" style="font-weight: 600; font-size: 0.9rem;">USUARIO</span>
-                            </div>
-                            <div>
-                                <p style="font-size: 0.75rem; color: var(--text-muted);">CVV</p>
-                                <span id="vcCvv" style="font-weight: 600; font-family: monospace;">•••</span>
-                            </div>
-                        </div>
-                        <div style="margin-top: 2rem; display: flex; gap: 0.5rem;">
-                            <button id="btnToggleCardData" class="btn" style="background: var(--bg-card-hover); font-size: 0.8rem;"><i class="fa-solid fa-eye"></i> Ver Datos</button>
-                            <button id="btnLockCard" class="btn" style="background: rgba(239, 68, 68, 0.2); color: var(--danger); font-size: 0.8rem;">Bloquear</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- SECCIÓN DE TARJETAS -->
+<div id="seccionTarjetas" class="content-section">
+    <div class="card-box" style="max-width: 500px; margin: 0 auto; text-align: center; padding: 2rem;">
+        <h3><i class="fa-solid fa-credit-card"></i> Tarjeta de Débito Virtual</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Gestiona tu tarjeta digital para compras seguras en línea.</p>
 
+        <!-- Contenedor dinámico (Aquí aparecerá el botón de solicitar o la tarjeta ya creada) -->
+        <div id="tarjetaDynamicArea">
+            <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
+                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
+                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
                 <!-- NUEVO: SECCIÓN DE MOVIMIENTOS E HISTORIAL -->
                 <div id="section-movements" class="section-view">
                     <div class="card-box" style="max-width: 700px; margin: 0 auto;">

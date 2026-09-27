@@ -310,5 +310,34 @@
 
     <!-- SCRIPT PRINCIPAL -->
     <script type="module" src="script.js"></script>
+
+    <!-- Script para forzar y capturar el evento de instalación -->
+<script>
+  let deferredPrompt;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Previene que Chrome muestre el banner automático predeterminado
+    e.preventDefault();
+    // Guarda el evento para lanzarlo cuando el usuario presione un botón
+    deferredPrompt = e;
+    console.log('¡PWA lista para ser instalada!');
+  });
+
+  // Si deseas agregar un botón en tu menú para instalar en cualquier momento:
+  // Puedes crear un botón con el id "btnInstalarApp" en tu HTML y activarlo así:
+  /*
+  const btnInstalar = document.getElementById('btnInstalarApp');
+  if(btnInstalar) {
+    btnInstalar.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Resultado de instalación: ${outcome}`);
+        deferredPrompt = null;
+      }
+    });
+  }
+  */
+</script>
 </body>
 </html>

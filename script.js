@@ -519,3 +519,81 @@ function mostrarFacturaMovimiento(tx) {
     const invoiceModal = document.getElementById("invoiceModal");
     if (invoiceModal) invoiceModal.classList.remove("hidden");
 }
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Función para inicializar y gestionar la tarjeta virtual del usuario
+async function verificarYCargarTarjeta(user, db) {
+    const dynamicArea = document.getElementById("tarjetaDynamicArea");
+    if (!dynamicArea) return;
+
+    const tarjetaRef = doc(db, "tarjetas_virtuales", user.uid);
+    const tarjetaSnap = await getDoc(tarjetaRef);
+
+    if (tarjetaSnap.exists()) {
+        // Si ya tiene tarjeta, la mostramos con sus datos guardados
+        const tData = tarjetaSnap.data();
+        renderizarTarjetaHTML(tData, dynamicArea, user, db);
+    } else {
+        // Si no tiene tarjeta, mostramos el botón de solicitar
+        dynamicArea.innerHTML = `
+            <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
+                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
+                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
+                </button>
+            </div>
+        `;
+
+        document.getElementById("btnSolicitarTarjeta").addEventListener("click", async () => {
+            // Generar datos aleatorios únicos para la tarjeta
+            const randomNum1 = Math.floor(1000 + Math.random() * 9000);
+            const randomNum2 = Math.floor(1000 + Math.random() * 9000);
+            const randomNum3 = Math.floor(1000 + Math.random() * 9000);
+            const numeroCompleto = `4829 ${randomNum1} ${randomNum2} ${randomNum3}`; // Simulando prefijo Visa 4829
+            
+            const cvvAleatorio = Math.floor(100 + Math.random() * 900).toString();
+            const mesExp = String(Math.floor(1 + Math.random() * 12)).padStart(2, '0');
+            const anioExp = String(new Date().getFullYear() + 4).slice(-2); // 4 años de vigencia
+
+            const nuevaTarjeta = {
+                numero: numeroCompleto,
+                titular: user.displayName || "CLIENTE BANCO PEDRO CARBO",
+                cvv: cvvAleatorio,
+                expiracion: `${mesExp}/${anioExp}`,
+                bloqueada: false
+            };
+
+            // Guardar en Firestore para que permanezca asociada al usuario
+            await setDoc(tarjetaRef, nuevaTarjeta);
+            
+            // Renderizar la tarjeta recién creada
+            renderizarTarjetaHTML(nuevaTarjeta, dynamicArea, user, db);
+        });
+    }
+}
+
+function renderizarTarjetaHTML(tData, container, user, db) {
+    container.innerHTML = `
+        <div class="card-preview" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: left; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
+                <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: #60a5fa;"></i>
+            </div>
+            <div style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 1.5rem;">
+                ${tData.numero}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                <div>
+                    <p style="font-size: 0.65rem; text-transform: uppercase;">Titular</p>
+                    <p style="color: white; font-weight: 600;">${tData.titular}</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.65rem; text-transform: uppercase;">CVV / Exp</p>
+                    <p style="color: white; font-weight: 600;">*** / ${tData.expiracion}</p>
+                </div>
+            </div>
+        </div>
+        <p style="color: var(--success, #22c55e); font-size: 0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check-circle"></i> Tu tarjeta virtual está activa y lista para usarse.</p>
+    `;
+}

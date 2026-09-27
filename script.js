@@ -1,4 +1,4 @@
-// script.js - Banco Pedro Carbo (Completo con cuentas, selección de bancos y comisión)
+// script.js - Banco Pedro Carbo (Completo con cuentas, verificación automática interna y externa por humano)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
@@ -151,7 +151,6 @@ onAuthStateChanged(auth, async (user) => {
                 currentUserData = userDoc.data();
                 currentBalance = currentUserData.saldo ?? 0.00;
                 
-                // Si es un usuario antiguo sin número de cuenta, se lo asignamos ahora mismo
                 if (!currentUserData.numeroCuenta || currentUserData.numeroCuenta === "") {
                     const nuevoNumeroCuenta = "55" + Math.floor(10000000 + Math.random() * 90000000);
                     await setDoc(userRef, { numeroCuenta: nuevoNumeroCuenta }, { merge: true });
@@ -220,7 +219,7 @@ if (mobileMenu) {
 }
 
 // ==========================================
-// TRANSFERENCIAS CON COMISIÓN Y DETECCIÓN DE BANCO
+// TRANSFERENCIAS: INTERNA (AUTOMÁTICA) Y EXTERNA (POR HUMANO)
 // ==========================================
 const formTransferencia = document.getElementById("formTransferencia");
 
@@ -232,7 +231,6 @@ if (formTransferencia) {
         const bancoDestino = selectBanco ? selectBanco.value : "Banco Pedro Carbo";
         
         const cuentaDestino = document.getElementById("txCuenta").value.trim();
-        const cedulaDestino = document.getElementById("txCedula").value.trim();
         const monto = parseFloat(document.getElementById("txMonto").value);
         const motivo = document.getElementById("txMotivo").value;
 
@@ -241,7 +239,6 @@ if (formTransferencia) {
             return;
         }
 
-        // Lógica de comisiones: $0.50 si es otro banco, $0.00 si es Banco Pedro Carbo
         let comision = (bancoDestino === "Banco Pedro Carbo") ? 0.00 : 0.50;
         let montoTotalADebitar = monto + comision;
 
@@ -253,8 +250,8 @@ if (formTransferencia) {
         try {
             let nombreBeneficiarioDetectado = "Tercero Externo";
 
-            // Si es de nuestro mismo banco, validamos y acreditamos al usuario interno
             if (bancoDestino === "Banco Pedro Carbo") {
+                // Validación automática en Firestore para nuestro banco (Sin pedir cédula)
                 const qAccount = query(collection(db, "usuarios"), where("numeroCuenta", "==", cuentaDestino));
                 const querySnap = await getDocs(qAccount);
 
@@ -263,13 +260,12 @@ if (formTransferencia) {
                     const beneficiarioData = beneficiarioDoc.data();
                     nombreBeneficiarioDetectado = beneficiarioData.nombre;
 
-                    // Evitar auto-transferencia a la misma cuenta
                     if (beneficiarioDoc.id === currentUser.uid) {
                         showToast("No puedes transferir fondos a tu propia cuenta.", "error");
                         return;
                     }
 
-                    // Acreditar saldo al destinatario interno
+                    // Acreditar saldo de forma automática al usuario interno
                     const nuevoSaldoDestino = (beneficiarioData.saldo || 0) + monto;
                     await setDoc(doc(db, "usuarios", beneficiarioDoc.id), { saldo: nuevoSaldoDestino }, { merge: true });
 
@@ -284,35 +280,40 @@ if (formTransferencia) {
                         timestamp: serverTimestamp()
                     });
                 } else {
-                    showToast("No se encontró ninguna cuenta activa en Banco Pedro Carbo con ese número.", "error");
+                    showToast("Número de cuenta no encontrado en Banco Pedro Carbo.", "error");
                     return;
                 }
             }
 
-            // Descontar saldo total (monto + comisión) al emisor
+            // Descontar saldo al emisor (incluyendo comisión si aplica)
             currentBalance -= montoTotalADebitar;
             updateBalanceUI();
             await setDoc(doc(db, "usuarios", currentUser.uid), { saldo: currentBalance }, { merge: true });
 
-            // Registrar la transacción de salida para el usuario actual
+            // Registrar la transacción de salida
             await addDoc(collection(db, "transacciones"), {
                 userId: currentUser.uid,
                 userEmail: currentUser.email,
-                title: `Transferencia a ${bancoDestino}`,
-                category: `Destino: ${cuentaDestino} (${nombreBeneficiarioDetectado}) - ${motivo}`,
+                title: bancoDestino === "Banco Pedro Carbo" ? `Transferencia a ${nombreBeneficiarioDetectado}` : `Transferencia a ${bancoDestino} (En proceso)`,
+                category: `Destino: ${cuentaDestino} - ${motivo}`,
                 amount: -montoTotalADebitar,
                 montoTransferido: monto,
                 comisionAplicada: comision,
                 banco: bancoDestino,
+                estado: bancoDestino === "Banco Pedro Carbo" ? "Completado" : "Pendiente de verificación humana",
                 date: new Date().toLocaleString(),
                 timestamp: serverTimestamp()
             });
 
             formTransferencia.reset();
-            showToast(`¡Transferencia exitosa! Comisión aplicada: $${comision.toFixed(2)}`);
+            if (bancoDestino === "Banco Pedro Carbo") {
+                showToast("¡Transferencia interna realizada con éxito!");
+            } else {
+                showToast("Transferencia enviada. Será verificada por un operador humano.");
+            }
         } catch (error) {
             console.error("Error al procesar transferencia:", error);
-            showToast("Hubo un error al procesar la transferencia.", "error");
+            showToast("Error de permisos o conexión con Firebase.", "error");
         }
     });
 }
@@ -398,7 +399,6 @@ function vincularBotonesTienda() {
     });
 }
 
-// Lógica de Compra en Tienda y Facturación
 const closeStoreModal = document.getElementById("closeStoreModal");
 if (closeStoreModal) {
     closeStoreModal.addEventListener("click", () => {

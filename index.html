@@ -107,29 +107,46 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN: TRANSFERENCIAS -->
-                <div id="section-transfer" class="section-view">
-                    <div class="card-box" style="max-width: 600px; margin: 0 auto;">
-                        <h3><i class="fa-solid fa-paper-plane" style="color: var(--primary);"></i> Realizar Transferencia</h3>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Envía fondos de forma segura e inmediata.</p>
-                        
-                        <form id="transferForm">
-                            <div class="form-group">
-                                <label>Número de Cuenta o Cédula Destino</label>
-                                <input type="text" class="form-control" placeholder="Ej. 0928374651" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Monto a Enviar ($ USD)</label>
-                                <input type="number" step="0.01" id="transferAmount" class="form-control" placeholder="0.00" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Motivo de la Transferencia</label>
-                                <input type="text" class="form-control" placeholder="Ej. Pago de servicios, Préstamo..." required>
-                            </div>
-                            <button type="submit" class="btn">Transferir Fondos</button>
-                        </form>
-                    </div>
-                </div>
+<!-- SECCIÓN DE TRANSFERENCIAS -->
+<div id="seccionTransferencias" class="content-section">
+    <div class="card-box" style="max-width: 550px; margin: 0 auto; padding: 2rem;">
+        <h3><i class="fa-solid fa-right-left"></i> Realizar Transferencia</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Ingresa los datos del destinatario para procesar tu envío.</p>
+
+        <form id="formTransferencia">
+            <div class="form-group">
+                <label>Número de Cuenta Destino</label>
+                <input type="text" id="txCuenta" class="form-control" placeholder="Ej. 4002918273" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Cédula / RUC del Destinatario</label>
+                <input type="text" id="txCedula" class="form-control" placeholder="Ej. 0928374651" required>
+            </div>
+
+            <div class="form-group">
+                <label>Monto a Transferir ($)</label>
+                <input type="number" step="0.01" id="txMonto" class="form-control" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+                <label>Motivo de la Transferencia</label>
+                <input type="text" id="txMotivo" class="form-control" placeholder="Ej. Pago de arriendo, servicios, etc." required>
+            </div>
+
+            <button type="submit" class="btn" style="margin-top: 1rem;"><i class="fa-solid fa-paper-plane"></i> Transferir Fondos</button>
+        </form>
+
+        <!-- Mensaje de espera oculto por defecto -->
+        <div id="mensajeAsesorTransferencia" class="hidden" style="text-align: center; padding: 2.5rem 1rem;">
+            <i class="fa-solid fa-hourglass-half fa-spin" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem; text-transform: uppercase;">¡Transferencia en Proceso!</h4>
+            <p style="color: var(--warning, #f59e0b); font-weight: 600; font-size: 1rem;">EN BREVE UN ASESOR VERIFICARÁ LA INFORMACIÓN</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">Por favor, mantente atento. Tu transacción está siendo validada por seguridad.</p>
+            <button id="nuevaTransferenciaBtn" class="btn" style="margin-top: 1.5rem; max-width: 200px;">Hacer otra transferencia</button>
+        </div>
+    </div>
+</div>
 
                 <!-- SECCIÓN: TIENDA & RECARGAS -->
                 <div id="section-store" class="section-view">

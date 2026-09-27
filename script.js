@@ -16,8 +16,8 @@ import {
     addDoc, 
     onSnapshot, 
     serverTimestamp,
-    query,       // <-- Asegúrate de tener esto
-    where        // <-- Asegúrate de tener esto
+    query, 
+    where 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -45,7 +45,7 @@ function showToast(message, type = "success") {
     setTimeout(() => { toast.className = ""; }, 3000);
 }
 
-// Control de pantallas Auth vs App con validación segura de elementos
+// Control de pantallas Auth vs App
 const authScreen = document.getElementById("authScreen");
 const appScreen = document.getElementById("appScreen");
 const loginView = document.getElementById("loginForm");
@@ -69,7 +69,7 @@ if (btnToLogin) {
     });
 }
 
-// Registro con saldo inicial en 0.00
+// Registro
 if (registerView) {
     registerView.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -120,8 +120,7 @@ if (btnLogout) {
     });
 }
 
-// Auth State Observer (Carga saldo real directo de Firestore)
-// Auth State Observer (Carga saldo real directo de Firestore)
+// Auth State Observer
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -131,12 +130,10 @@ onAuthStateChanged(auth, async (user) => {
         const name = user.displayName || "Usuario";
         const userNameDisplay = document.getElementById("userNameDisplay");
         const userAvatar = document.getElementById("userAvatar");
-        const vcHolder = document.getElementById("vcHolder");
         const dashBalance = document.getElementById("dashBalance");
 
         if (userNameDisplay) userNameDisplay.textContent = name;
         if (userAvatar) userAvatar.textContent = name.substring(0, 2).toUpperCase();
-        if (vcHolder) vcHolder.textContent = name.toUpperCase();
         if (dashBalance) dashBalance.textContent = "Cargando...";
 
         try {
@@ -153,9 +150,8 @@ onAuthStateChanged(auth, async (user) => {
         }
 
         cargarProductosTienda();
-        
-        // 👉 ¡AGREGAR ESTA LÍNEA AQUÍ!
         cargarMovimientosUsuario(user.uid);
+        verificarYCargarTarjeta(user, db); // Carga la tarjeta virtual del usuario
 
     } else {
         currentUser = null;
@@ -201,7 +197,7 @@ if (mobileMenu) {
     });
 }
 
-// Cargar productos de la tienda dinámicamente desde Firestore
+// Cargar productos de la tienda
 function cargarProductosTienda() {
     onSnapshot(collection(db, "productos_tienda"), (snapshot) => {
         let ffHtml = "";
@@ -211,7 +207,7 @@ function cargarProductosTienda() {
         const claroContainer = document.getElementById("claroProductsContainer");
 
         if (snapshot.empty) {
-            const emptyMsg = `<p style="color: var(--text-muted); grid-column: 1/-1;">No hay productos disponibles por el momento.</p>`;
+            const emptyMsg = `<p style="color: var(--text-muted); grid-column: 1/-1;">No hay productos disponibles.</p>`;
             if (ffContainer) ffContainer.innerHTML = emptyMsg;
             if (claroContainer) claroContainer.innerHTML = emptyMsg;
             return;
@@ -233,15 +229,12 @@ function cargarProductosTienda() {
                 </div>
             `;
 
-            if (prod.type === "ff") {
-                ffHtml += cardHTML;
-            } else {
-                claroHtml += cardHTML;
-            }
+            if (prod.type === "ff") { ffHtml += cardHTML; } 
+            else { claroHtml += cardHTML; }
         });
 
-        if (ffContainer) ffContainer.innerHTML = ffHtml || '<p style="color: var(--text-muted);">No hay diamantes disponibles.</p>';
-        if (claroContainer) claroContainer.innerHTML = claroHtml || '<p style="color: var(--text-muted);">No hay recargas disponibles.</p>';
+        if (ffContainer) ffContainer.innerHTML = ffHtml || '<p style="color: var(--text-muted);">No hay diamantes.</p>';
+        if (claroContainer) claroContainer.innerHTML = claroHtml || '<p style="color: var(--text-muted);">No hay recargas.</p>';
 
         vincularBotonesTienda();
     });
@@ -282,19 +275,24 @@ function vincularBotonesTienda() {
     });
 }
 
-// Manejo de Transferencias Bancarias
-const transferForm = document.getElementById("transferForm");
-if (transferForm) {
-    transferForm.addEventListener("submit", async (e) => {
+// Manejo de Transferencias Bancarias con aviso de asesor
+const formTransferencia = document.getElementById("formTransferencia");
+const mensajeAsesorTransferencia = document.getElementById("mensajeAsesorTransferencia");
+const nuevaTransferenciaBtn = document.getElementById("nuevaTransferenciaBtn");
+
+if (formTransferencia) {
+    formTransferencia.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const amountInput = document.getElementById("transferAmount");
-        if (!amountInput) return;
-        const amount = parseFloat(amountInput.value);
 
-        if (amount <= 0) { showToast("Monto inválido", "error"); return; }
-        if (amount > currentBalance) { showToast("Fondos insuficientes en la cuenta", "error"); return; }
+        const cuenta = document.getElementById("txCuenta").value;
+        const cedula = document.getElementById("txCedula").value;
+        const monto = parseFloat(document.getElementById("txMonto").value);
+        const motivo = document.getElementById("txMotivo").value;
 
-        currentBalance -= amount;
+        if (monto <= 0) { showToast("Monto inválido", "error"); return; }
+        if (monto > currentBalance) { showToast("Fondos insuficientes en la cuenta", "error"); return; }
+
+        currentBalance -= monto;
         updateBalanceUI();
 
         try {
@@ -305,21 +303,106 @@ if (transferForm) {
                 userEmail: currentUser.email,
                 userName: currentUser.displayName || "Usuario",
                 title: "Transferencia Bancaria",
-                category: "Envío Interbancario",
-                amount: -amount,
+                category: `Cuenta: ${cuenta} | Cédula: ${cedula} | Motivo: ${motivo}`,
+                amount: -monto,
                 date: new Date().toLocaleString(),
-                timestamp: serverTimestamp()
+                timestamp: serverTimestamp(),
+                estado: "Pendiente de Verificación"
             });
 
-            showToast("¡Transferencia realizada con éxito!");
-            transferForm.reset();
+            formTransferencia.classList.add("hidden");
+            if (mensajeAsesorTransferencia) mensajeAsesorTransferencia.classList.remove("hidden");
+
         } catch (err) {
             showToast("Error al procesar la transferencia", "error");
         }
     });
 }
 
-// Lógica de Compra en Tienda y Facturación
+if (nuevaTransferenciaBtn) {
+    nuevaTransferenciaBtn.addEventListener("click", () => {
+        formTransferencia.reset();
+        formTransferencia.classList.remove("hidden");
+        if (mensajeAsesorTransferencia) mensajeAsesorTransferencia.classList.add("hidden");
+    });
+}
+
+// Tarjeta Virtual con Botón de Solicitud Inicial
+async function verificarYCargarTarjeta(user, dbRef) {
+    const dynamicArea = document.getElementById("tarjetaDynamicArea");
+    if (!dynamicArea) return;
+
+    const tarjetaRef = doc(dbRef, "tarjetas_virtuales", user.uid);
+    const tarjetaSnap = await getDoc(tarjetaRef);
+
+    if (tarjetaSnap.exists()) {
+        const tData = tarjetaSnap.data();
+        renderizarTarjetaHTML(tData, dynamicArea, user, dbRef);
+    } else {
+        dynamicArea.innerHTML = `
+            <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem; text-align: center;">
+                <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
+                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
+                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
+                </button>
+            </div>
+        `;
+
+        const btnSolicitar = document.getElementById("btnSolicitarTarjeta");
+        if (btnSolicitar) {
+            btnSolicitar.addEventListener("click", async () => {
+                const randomNum1 = Math.floor(1000 + Math.random() * 9000);
+                const randomNum2 = Math.floor(1000 + Math.random() * 9000);
+                const randomNum3 = Math.floor(1000 + Math.random() * 9000);
+                const numeroCompleto = `4829 ${randomNum1} ${randomNum2} ${randomNum3}`;
+                
+                const cvvAleatorio = Math.floor(100 + Math.random() * 900).toString();
+                const mesExp = String(Math.floor(1 + Math.random() * 12)).padStart(2, '0');
+                const anioExp = String(new Date().getFullYear() + 4).slice(-2);
+
+                const nuevaTarjeta = {
+                    numero: numeroCompleto,
+                    titular: user.displayName || "CLIENTE BANCO PEDRO CARBO",
+                    cvv: cvvAleatorio,
+                    expiracion: `${mesExp}/${anioExp}`,
+                    bloqueada: false
+                };
+
+                await setDoc(tarjetaRef, nuevaTarjeta);
+                renderizarTarjetaHTML(nuevaTarjeta, dynamicArea, user, dbRef);
+                showToast("¡Tarjeta virtual creada con éxito!");
+            });
+        }
+    }
+}
+
+function renderizarTarjetaHTML(tData, container, user, dbRef) {
+    container.innerHTML = `
+        <div class="card-preview" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: left; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
+                <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: #60a5fa;"></i>
+            </div>
+            <div style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 1.5rem;">
+                ${tData.numero}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                <div>
+                    <p style="font-size: 0.65rem; text-transform: uppercase;">Titular</p>
+                    <p style="color: white; font-weight: 600;">${tData.titular}</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.65rem; text-transform: uppercase;">CVV / Exp</p>
+                    <p style="color: white; font-weight: 600;">${tData.cvv} / ${tData.expiracion}</p>
+                </div>
+            </div>
+        </div>
+        <p style="color: var(--success, #22c55e); font-size: 0.85rem; margin-top: 1rem; text-align: center;"><i class="fa-solid fa-check-circle"></i> Tu tarjeta virtual está activa y lista para usarse.</p>
+    `;
+}
+
+// Modales de tienda e historial
 const closeStoreModal = document.getElementById("closeStoreModal");
 if (closeStoreModal) {
     closeStoreModal.addEventListener("click", () => {
@@ -367,23 +450,6 @@ if (storeForm) {
 
         const storeModal = document.getElementById("storeModal");
         if (storeModal) storeModal.classList.add("hidden");
-
-        const invDate = document.getElementById("invDate");
-        const invId = document.getElementById("invId");
-        const invClient = document.getElementById("invClient");
-        const invProduct = document.getElementById("invProduct");
-        const invTarget = document.getElementById("invTarget");
-        const invTotal = document.getElementById("invTotal");
-
-        if (invDate) invDate.textContent = txDate;
-        if (invId) invId.textContent = txRandomId;
-        if (invClient) invClient.textContent = currentUser ? (currentUser.displayName || "Cliente") : "Pedro Carbo";
-        if (invProduct) invProduct.textContent = selectedProduct.name;
-        if (invTarget) invTarget.textContent = targetValue;
-        if (invTotal) invTotal.textContent = selectedProduct.price.toFixed(2);
-
-        const invoiceModal = document.getElementById("invoiceModal");
-        if (invoiceModal) invoiceModal.classList.remove("hidden");
     });
 }
 
@@ -397,54 +463,10 @@ if (btnCloseInvoice) {
 
 const btnPrintInvoice = document.getElementById("btnPrintInvoice");
 if (btnPrintInvoice) {
-    btnPrintInvoice.addEventListener("click", () => {
-        window.print();
-    });
+    btnPrintInvoice.addEventListener("click", () => { window.print(); });
 }
 
-// Tarjeta Virtual
-let cardVisible = false;
-const btnToggleCardData = document.getElementById("btnToggleCardData");
-if (btnToggleCardData) {
-    btnToggleCardData.addEventListener("click", () => {
-        cardVisible = !cardVisible;
-        const numEl = document.getElementById("vcNumber");
-        const cvvEl = document.getElementById("vcCvv");
-
-        if (cardVisible) {
-            if (numEl) numEl.textContent = "4829 3910 8284 9214";
-            if (cvvEl) cvvEl.textContent = "582";
-            btnToggleCardData.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Ocultar Datos';
-        } else {
-            if (numEl) numEl.textContent = "4829 •••• •••• 9214";
-            if (cvvEl) cvvEl.textContent = "•••";
-            btnToggleCardData.innerHTML = '<i class="fa-solid fa-eye"></i> Ver Datos';
-        }
-    });
-}
-
-const btnLockCard = document.getElementById("btnLockCard");
-if (btnLockCard) {
-    btnLockCard.addEventListener("click", () => {
-        showToast("Tarjeta virtual bloqueada temporalmente por seguridad", "error");
-    });
-}
-document.addEventListener("DOMContentLoaded", () => {
-    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    const body = document.body;
-
-    // Detectar si es Android o dispositivo móvil
-    if (/android/i.test(userAgent)) {
-        body.classList.add("is-android", "is-mobile");
-    } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-        body.classList.add("is-ios", "is-mobile");
-    } else if (/Mobi|Android/i.test(userAgent)) {
-        body.classList.add("is-mobile");
-    } else {
-        body.classList.add("is-pc");
-    }
-});
-// Escuchar y cargar SOLO los movimientos del usuario con evento de clic para factura
+// Cargar movimientos del usuario
 function cargarMovimientosUsuario(userId) {
     const movementsContainer = document.getElementById("userMovementsList");
     if (!movementsContainer) return;
@@ -463,11 +485,10 @@ function cargarMovimientosUsuario(userId) {
             const tx = docSnap.data();
             const isPositive = tx.amount > 0;
             
-            // Renderizamos cada movimiento como un botón o tarjeta interactiva
             html += `
                 <div class="movement-item" data-title="${tx.title}" data-category="${tx.category}" data-amount="${tx.amount}" data-date="${tx.date}" data-id="${docSnap.id}" style="background: var(--bg-dark); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.2s;">
                     <div>
-                        <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title} <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem; color: var(--text-muted); margin-left: 0.5rem;"></i></h4>
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">${tx.title}</h4>
                         <p style="font-size: 0.8rem; color: var(--text-muted);">${tx.category} • ${tx.date}</p>
                     </div>
                     <div style="font-size: 1rem; font-weight: bold; color: ${isPositive ? 'var(--success)' : 'var(--danger)'};">
@@ -479,28 +500,20 @@ function cargarMovimientosUsuario(userId) {
 
         movementsContainer.innerHTML = html;
 
-        // Añadir el evento de clic para abrir la factura de cualquier movimiento del historial
         document.querySelectorAll(".movement-item").forEach(item => {
             item.addEventListener("click", () => {
-                const title = item.getAttribute("data-title");
-                const category = item.getAttribute("data-category");
-                const amount = parseFloat(item.getAttribute("data-amount"));
-                const date = item.getAttribute("data-date");
-                const txId = item.getAttribute("data-id");
-
                 mostrarFacturaMovimiento({
-                    title,
-                    category,
-                    amount,
-                    date,
-                    id: "BPC-" + txId.substring(0, 8).toUpperCase()
+                    title: item.getAttribute("data-title"),
+                    category: item.getAttribute("data-category"),
+                    amount: parseFloat(item.getAttribute("data-amount")),
+                    date: item.getAttribute("data-date"),
+                    id: "BPC-" + item.getAttribute("data-id").substring(0, 8).toUpperCase()
                 });
             });
         });
     });
 }
 
-// Función auxiliar para rellenar y mostrar el comprobante estilo Banco
 function mostrarFacturaMovimiento(tx) {
     const invDate = document.getElementById("invDate");
     const invId = document.getElementById("invId");
@@ -518,134 +531,4 @@ function mostrarFacturaMovimiento(tx) {
 
     const invoiceModal = document.getElementById("invoiceModal");
     if (invoiceModal) invoiceModal.classList.remove("hidden");
-}
-// ✔️ CORRECTO
-import { doc, getDoc } from "firebase/firestore";
-const documentoRef = "algo";
-
-// Función para inicializar y gestionar la tarjeta virtual del usuario
-async function verificarYCargarTarjeta(user, db) {
-    const dynamicArea = document.getElementById("tarjetaDynamicArea");
-    if (!dynamicArea) return;
-
-    const tarjetaRef = doc(db, "tarjetas_virtuales", user.uid);
-    const tarjetaSnap = await getDoc(tarjetaRef);
-
-    if (tarjetaSnap.exists()) {
-        // Si ya tiene tarjeta, la mostramos con sus datos guardados
-        const tData = tarjetaSnap.data();
-        renderizarTarjetaHTML(tData, dynamicArea, user, db);
-    } else {
-        // Si no tiene tarjeta, mostramos el botón de solicitar
-        dynamicArea.innerHTML = `
-            <div style="padding: 2rem; background: rgba(255,255,255,0.03); border: 2px dashed var(--border); border-radius: 1rem; margin-bottom: 1.5rem;">
-                <i class="fa-solid fa-id-card" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
-                <p style="margin-bottom: 1rem; font-size: 0.95rem;">Aún no cuentas con una tarjeta de débito virtual activa.</p>
-                <button id="btnSolicitarTarjeta" class="btn" style="max-width: 250px; margin: 0 auto;">
-                    <i class="fa-solid fa-plus-circle"></i> Solicitar Tarjeta Virtual
-                </button>
-            </div>
-        `;
-
-        document.getElementById("btnSolicitarTarjeta").addEventListener("click", async () => {
-            // Generar datos aleatorios únicos para la tarjeta
-            const randomNum1 = Math.floor(1000 + Math.random() * 9000);
-            const randomNum2 = Math.floor(1000 + Math.random() * 9000);
-            const randomNum3 = Math.floor(1000 + Math.random() * 9000);
-            const numeroCompleto = `4829 ${randomNum1} ${randomNum2} ${randomNum3}`; // Simulando prefijo Visa 4829
-            
-            const cvvAleatorio = Math.floor(100 + Math.random() * 900).toString();
-            const mesExp = String(Math.floor(1 + Math.random() * 12)).padStart(2, '0');
-            const anioExp = String(new Date().getFullYear() + 4).slice(-2); // 4 años de vigencia
-
-            const nuevaTarjeta = {
-                numero: numeroCompleto,
-                titular: user.displayName || "CLIENTE BANCO PEDRO CARBO",
-                cvv: cvvAleatorio,
-                expiracion: `${mesExp}/${anioExp}`,
-                bloqueada: false
-            };
-
-            // Guardar en Firestore para que permanezca asociada al usuario
-            await setDoc(tarjetaRef, nuevaTarjeta);
-            
-            // Renderizar la tarjeta recién creada
-            renderizarTarjetaHTML(nuevaTarjeta, dynamicArea, user, db);
-        });
-    }
-}
-
-function renderizarTarjetaHTML(tData, container, user, db) {
-    container.innerHTML = `
-        <div class="card-preview" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; text-align: left; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); position: relative;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">P. CARBO VIRTUAL</span>
-                <i class="fa-brands fa-cc-visa" style="font-size: 2rem; color: #60a5fa;"></i>
-            </div>
-            <div style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 1.5rem;">
-                ${tData.numero}
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
-                <div>
-                    <p style="font-size: 0.65rem; text-transform: uppercase;">Titular</p>
-                    <p style="color: white; font-weight: 600;">${tData.titular}</p>
-                </div>
-                <div>
-                    <p style="font-size: 0.65rem; text-transform: uppercase;">CVV / Exp</p>
-                    <p style="color: white; font-weight: 600;">*** / ${tData.expiracion}</p>
-                </div>
-            </div>
-        </div>
-        <p style="color: var(--success, #22c55e); font-size: 0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check-circle"></i> Tu tarjeta virtual está activa y lista para usarse.</p>
-    `;
-}
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const formTransferencia = document.getElementById("formTransferencia");
-const mensajeAsesorTransferencia = document.getElementById("mensajeAsesorTransferencia");
-const nuevaTransferenciaBtn = document.getElementById("nuevaTransferenciaBtn");
-
-if (formTransferencia) {
-    formTransferencia.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const cuenta = document.getElementById("txCuenta").value;
-        const cedula = document.getElementById("txCedula").value;
-        const monto = parseFloat(document.getElementById("txMonto").value);
-        const motivo = document.getElementById("txMotivo").value;
-
-        const user = auth.currentUser;
-        if (!user) return alert("Debes iniciar sesión.");
-
-        try {
-            // Guardar la transacción en Firestore para que el panel de administración/soporte la verifique
-            await addDoc(collection(db, "transacciones"), {
-                userId: user.uid,
-                userEmail: user.email,
-                numeroCuenta: cuenta,
-                cedulaDestino: cedula,
-                monto: monto,
-                motivo: motivo,
-                estado: "Pendiente de Verificación",
-                fecha: serverTimestamp()
-            });
-
-            // Ocultar el formulario y mostrar el aviso del asesor
-            formTransferencia.classList.add("hidden");
-            mensajeAsesorTransferencia.classList.remove("hidden");
-
-        } catch (error) {
-            console.error("Error al registrar transferencia:", error);
-            alert("Hubo un error al procesar la solicitud.");
-        }
-    });
-}
-
-// Botón para reiniciar el formulario y hacer otra transferencia
-if (nuevaTransferenciaBtn) {
-    nuevaTransferenciaBtn.addEventListener("click", () => {
-        formTransferencia.reset();
-        formTransferencia.classList.remove("hidden");
-        mensajeAsesorTransferencia.classList.add("hidden");
-    });
 }

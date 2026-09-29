@@ -48,7 +48,7 @@
             <p id="userRoleSubtitle">Conectando con un asesor en tiempo real...</p>
         </div>
 
-        <!-- VISTA CLIENTE: Sala de espera y chat de 10 min -->
+        <!-- VISTA CLIENTE: Sala de espera y chat interactivo -->
         <div id="clientSupportView" class="support-grid hidden" style="grid-template-columns: 1fr;">
             <div class="card-box whatsapp-box" style="max-width: 700px; margin: 0 auto; width: 100%;">
                 <div class="wa-header">
@@ -56,7 +56,7 @@
                         <div class="wa-avatar"><i class="fa-solid fa-user-shield"></i></div>
                         <div>
                             <h4 id="agentNameHeader">Asesor de Banco Pedro Carbo</h4>
-                            <span id="chatStatusIndicator" class="wa-status">Buscando agente disponible...</span>
+                            <span id="chatStatusIndicator" class="wa-status">Asistente Virtual Activo</span>
                         </div>
                     </div>
                     <div id="timerDisplay" style="font-size: 0.85rem; background: rgba(0,0,0,0.2); padding: 0.3rem 0.6rem; border-radius: 0.5rem; display: none;">
@@ -65,13 +65,10 @@
                 </div>
                 
                 <div id="clientChatBody" class="wa-chat-body">
-                    <div class="wa-message incoming">
-                        <p>Hola, bienvenido al soporte en vivo. Un asesor se unirá a tu chat automáticamente en breve.</p>
-                        <span class="wa-time">Ahora</span>
-                    </div>
+                    <!-- Los mensajes y botones se cargarán dinámicamente desde JS -->
                 </div>
 
-                <div class="wa-footer">
+                <div class="wa-footer" id="clientFooterArea">
                     <input type="text" id="clientInput" placeholder="Escribe tu consulta aquí..." class="form-control">
                     <button id="clientSendBtn" class="btn"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>

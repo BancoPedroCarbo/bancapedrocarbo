@@ -139,9 +139,17 @@ if (btnLogout) {
     });
 }
 
-// Auth State Observer (Con soporte de autogeneración para usuarios antiguos)
+// Auth State Observer mejorado con validación de correo verificado
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        // Opcional estricto: Si no ha verificado su correo, impedir el ingreso y advertir
+        // (Nota: Comenta esta línea si deseas permitir el acceso sin verificar)
+        if (!user.emailVerified) {
+            showToast("Por favor, verifica tu correo electrónico antes de ingresar. Revisa tu bandeja de entrada.", "error");
+            await signOut(auth);
+            return;
+        }
+
         currentUser = user;
         if (authScreen) authScreen.classList.add("hidden");
         if (appScreen) appScreen.classList.remove("hidden");
@@ -192,7 +200,6 @@ onAuthStateChanged(auth, async (user) => {
         if (authScreen) authScreen.classList.remove("hidden");
     }
 });
-
 function updateBalanceUI() {
     const dashBalance = document.getElementById("dashBalance");
     if (!dashBalance) return;

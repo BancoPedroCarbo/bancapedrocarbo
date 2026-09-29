@@ -581,6 +581,7 @@ function cargarMovimientosUsuario(userId) {
                     if (fDate) fDate.textContent = date;
                     if (fEstado) fEstado.textContent = estado;
 
+                    modalFactura.style.display = "flex";
                     modalFactura.classList.remove("hidden");
                 } else {
                     alert(`Comprobante:\n${title}\nDetalle: ${category}\nMonto: $${amount}\nFecha: ${date}\nEstado: ${estado}`);

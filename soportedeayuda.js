@@ -4,6 +4,7 @@ import {
     getFirestore, 
     doc, 
     setDoc, 
+    getDoc,
     collection, 
     addDoc, 
     onSnapshot, 
@@ -88,10 +89,9 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- LÓGICA DEL CLIENTE ---
 async function initClientChat(user) {
-    currentChatId = user.uid; // Un chat único por usuario
+    currentChatId = user.uid; 
     const chatRef = doc(db, "chats_soporte", currentChatId);
 
-    // Crear o asegurar que el chat existe en estado de espera
     await setDoc(chatRef, {
         userId: user.uid,
         userName: user.displayName || user.email,
@@ -105,20 +105,22 @@ async function initClientChat(user) {
     const statusIndicator = document.getElementById("chatStatusIndicator");
     const timerBox = document.getElementById("timerDisplay");
 
+    // Mostrar mensaje de bienvenida inicial con los botones interactivos
+    renderWelcomeMenu(chatBody, user);
+
     // Escuchar cambios en el estado del chat (cuando el agente se une)
     onSnapshot(chatRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.status === "activo") {
                 statusIndicator.textContent = "🟢 Conectado con Asesor Humano";
-                timerBox.style.display = "block";
+                if(timerBox) timerBox.style.display = "block";
                 
-                // Iniciar temporizador de 10 minutos si cuenta con hora de inicio
                 if (!timerInterval && data.startTime) {
                     startClientTimer(data.startTime.toMillis());
                 }
             } else {
-                statusIndicator.textContent = "⏳ Buscando agente disponible...";
+                statusIndicator.textContent = "Asistente Virtual Activo";
             }
         }
     });
@@ -126,7 +128,19 @@ async function initClientChat(user) {
     // Escuchar mensajes en tiempo real
     const q = query(collection(db, "chats_soporte", currentChatId, "mensajes"), orderBy("timestamp", "asc"));
     onSnapshot(q, (snapshot) => {
-        let html = `<div class="wa-message incoming"><p>Hola ${user.displayName || 'Cliente'}, un asesor humano se unirá a tu solicitud en breve.</p></div>`;
+        // Mantener el menú de bienvenida y adjuntar los nuevos mensajes o interacciones
+        let html = `
+            <div class="wa-message incoming">
+                <p><strong>HOLA BIENVENIDOS A BANCA PEDRO CARBO ¿QUÉ LE PODEMOS AYUDAR? ELIGE:</strong></p>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
+                    <button class="support-option-btn" data-option="agente" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-user-tie"></i> Consulta con un agente</button>
+                    <button class="support-option-btn" data-option="deuda" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-file-invoice-dollar"></i> Consulta de saldo de deuda</button>
+                    <button class="support-option-btn" data-option="problemas" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-triangle-exclamation"></i> Problemas o errores</button>
+                    <button class="support-option-btn" data-option="baneada" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-ban"></i> Cuenta baneada o robada</button>
+                </div>
+                <span class="wa-time">Ahora</span>
+            </div>
+        `;
         
         snapshot.forEach((docSnap) => {
             const m = docSnap.data();
@@ -134,12 +148,20 @@ async function initClientChat(user) {
             html += `
                 <div class="wa-message ${isMe ? 'outgoing' : 'incoming'}">
                     <p><strong>${m.senderName}:</strong> ${m.text}</p>
-                    <span class="wa-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span class="wa-time">${m.timestamp ? new Date(m.timestamp.toMillis()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Ahora'}</span>
                 </div>
             `;
         });
         chatBody.innerHTML = html;
         chatBody.scrollTop = chatBody.scrollHeight;
+
+        // Reasignar eventos a los botones de opción cada vez que se renderice el chat
+        document.querySelectorAll(".support-option-btn").forEach(button => {
+            button.addEventListener("click", async (e) => {
+                const option = e.currentTarget.getAttribute("data-option");
+                await handleSupportOptionSelection(option, user);
+            });
+        });
     });
 
     async function sendMsg() {
@@ -159,9 +181,65 @@ async function initClientChat(user) {
     input.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMsg(); });
 }
 
+// Renderizar Menú de Bienvenida Inicial
+function renderWelcomeMenu(chatBody, user) {
+    chatBody.innerHTML = `
+        <div class="wa-message incoming">
+            <p><strong>HOLA BIENVENIDOS A BANCA PEDRO CARBO ¿QUÉ LE PODEMOS AYUDAR? ELIGE:</strong></p>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
+                <button class="support-option-btn" data-option="agente" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-user-tie"></i> Consulta con un agente</button>
+                <button class="support-option-btn" data-option="deuda" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-file-invoice-dollar"></i> Consulta de saldo de deuda</button>
+                <button class="support-option-btn" data-option="problemas" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-triangle-exclamation"></i> Problemas o errores</button>
+                <button class="support-option-btn" data-option="baneada" style="background: var(--primary); color: white; border: none; padding: 0.6rem; border-radius: 0.4rem; cursor: pointer; text-align: left; font-size: 0.85rem;"><i class="fa-solid fa-ban"></i> Cuenta baneada o robada</button>
+            </div>
+            <span class="wa-time">Ahora</span>
+        </div>
+    `;
+
+    document.querySelectorAll(".support-option-btn").forEach(button => {
+        button.addEventListener("click", async (e) => {
+            const option = e.currentTarget.getAttribute("data-option");
+            await handleSupportOptionSelection(option, user);
+        });
+    });
+}
+
+// Manejar la respuesta automática según el botón presionado
+async function handleSupportOptionSelection(option, user) {
+    let responseText = "";
+
+    if (option === "agente") {
+        responseText = "TE ESTAMOS BUSCANDO UN AGENTE DISPONIBLE";
+    } else if (option === "deuda") {
+        try {
+            const userDocRef = doc(db, "usuarios", user.uid);
+            const userSnap = await getDoc(userDocRef);
+            let deudaVal = 0.00;
+            if (userSnap.exists()) {
+                deudaVal = userSnap.data().deuda || 0.00;
+            }
+            responseText = `TU SALDO DE DEUDA ES $${Number(deudaVal).toFixed(2)}`;
+        } catch (err) {
+            responseText = "TU SALDO DE DEUDA ES $0.00";
+        }
+    } else if (option === "problemas") {
+        responseText = "EN BREVE TE CONTACTAREMOS CON UN AGENTE DE PROBLEMAS";
+    } else if (option === "baneada") {
+        responseText = "UN ESPECIALISTA TE ESTÁ REVISANDO EN BREVE TE RESPONDERÁ";
+    }
+
+    // Guardar la selección y la respuesta automática en Firebase
+    await addDoc(collection(db, "chats_soporte", user.uid, "mensajes"), {
+        senderId: "sistema_bot",
+        senderName: "Asistente Virtual",
+        text: responseText,
+        timestamp: serverTimestamp()
+    });
+}
+
 function startClientTimer(startTimeMs) {
     if (timerInterval) return;
-    const durationMs = 10 * 60 * 1000; // 10 minutos en milisegundos
+    const durationMs = 10 * 60 * 1000; 
 
     timerInterval = setInterval(() => {
         const now = Date.now();
@@ -177,7 +255,6 @@ function startClientTimer(startTimeMs) {
             return;
         }
 
-        // Alerta automática en el minuto 9 (cuando quedan 60 segundos o menos)
         if (remaining <= 60000 && !warningSent) {
             warningSent = true;
             appendSystemWarningMessage("⚠️ ATENCIÓN: Este chat de soporte finalizará automáticamente en 1 minuto.");
@@ -185,7 +262,8 @@ function startClientTimer(startTimeMs) {
 
         const mins = Math.floor(remaining / 60000);
         const secs = Math.floor((remaining % 60000) / 1000);
-        document.getElementById("timeLeft").textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const timeLeftEl = document.getElementById("timeLeft");
+        if(timeLeftEl) timeLeftEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }, 1000);
 }
 
@@ -211,7 +289,6 @@ function initSupportAgentPanel() {
 
     let activeListener = null;
 
-    // Escuchar todas las solicitudes de chat en tiempo real
     onSnapshot(collection(db, "chats_soporte"), (snapshot) => {
         let html = "";
         if (snapshot.empty) {
@@ -231,7 +308,6 @@ function initSupportAgentPanel() {
 
         queueList.innerHTML = html;
 
-        // Unirse automáticamente al hacer clic en cualquier solicitud de la lista
         document.querySelectorAll(".agent-queue-item").forEach(item => {
             item.addEventListener("click", async () => {
                 currentChatId = item.getAttribute("data-id");
@@ -241,14 +317,12 @@ function initSupportAgentPanel() {
                 agentInput.disabled = false;
                 agentSendBtn.disabled = false;
 
-                // Cambiar estado a activo y registrar tiempo de inicio si es la primera vez
                 const chatRef = doc(db, "chats_soporte", currentChatId);
                 await updateDoc(chatRef, {
                     status: "activo",
                     startTime: serverTimestamp()
                 });
 
-                // Cargar mensajes anteriores del usuario y mantener escucha en tiempo real
                 if (activeListener) activeListener(); 
                 
                 const q = query(collection(db, "chats_soporte", currentChatId, "mensajes"), orderBy("timestamp", "asc"));

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Seguridad - Banco Pedro Carbo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-layout">
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-building-columns"></i>
+                <span>Pedro Carbo</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="index.html" class="menu-item"><i class="fa-solid fa-house"></i> Inicio</a></li>
+                <li><a href="configuracion.html" class="menu-item active"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content">
+            <header class="topbar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h3 id="pageTitle">Configuración y Seguridad</h3>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">PC</div>
+                    <div style="display: flex; flex-direction: column;">
+                        <span id="userNameDisplay" style="font-weight: 600; font-size: 0.9rem;">Cargando...</span>
+                        <span id="userAccountNum" style="font-size: 0.7rem; color: var(--text-muted);">Cuenta: --</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- SECCIÓN: CAMBIO DE CORREO ELECTRÓNICO -->
+                <div class="card-box" style="padding: 2rem;">
+                    <h3><i class="fa-solid fa-envelope" style="color: var(--primary);"></i> Cambiar Correo Electrónico</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Actualiza la dirección de correo electrónico asociada a tu cuenta bancaria.</p>
+                    
+                    <form id="formChangeEmail">
+                        <div class="form-group">
+                            <label>Nuevo Correo Electrónico</label>
+                            <input type="email" id="newEmail" class="form-control" placeholder="nuevo@correo.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña Actual (Por seguridad)</label>
+                            <input type="password" id="currentPasswordForEmail" class="form-control" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn" style="max-width: 220px; margin-top: 0.5rem;">Actualizar Correo</button>
+                    </form>
+                </div>
+
+                <!-- SECCIÓN: CAMBIO DE CONTRASEÑA -->
+                <div class="card-box" style="padding: 2rem;">
+                    <h3><i class="fa-solid fa-key" style="color: var(--primary);"></i> Cambiar Contraseña</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Mantén tu cuenta protegida usando una contraseña robusta.</p>
+                    
+                    <form id="formChangePassword">
+                        <div class="form-group">
+                            <label>Contraseña Actual</label>
+                            <input type="password" id="currentPassword" class="form-control" placeholder="••••••••" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nueva Contraseña</label>
+                            <input type="password" id="newPassword" class="form-control" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn" style="max-width: 220px; margin-top: 0.5rem;">Actualizar Contraseña</button>
+                    </form>
+                </div>
+
+                <!-- SECCIÓN: VERIFICACIÓN DE 2 PASOS Y SMS -->
+                <div class="card-box" style="padding: 2rem;">
+                    <h3><i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Verificación de Dos Pasos y Alertas SMS</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Añade una capa extra de seguridad para autorizar transferencias y retiros.</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 0.75rem;">
+                            <div>
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Autenticación de 2 Pasos (2FA)</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">Solicitar código al iniciar sesión desde dispositivos nuevos.</p>
+                            </div>
+                            <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                                <input type="checkbox" id="toggle2FA" style="opacity: 0; width: 0; height: 0;">
+                                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px;"></span>
+                            </label>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 0.75rem;">
+                            <div>
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Notificaciones y Alertas por SMS</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">Recibe un mensaje de texto por cada movimiento o compra realizada.</p>
+                            </div>
+                            <label style="position: relative; display: inline-block; width: 50px; height: 24px; cursor: pointer;">
+                                <input type="checkbox" id="toggleSMS" style="opacity: 0; width: 0; height: 0;">
+                                <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px;"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- TOAST NOTIFICACIONES -->
+    <div id="toast">Operación exitosa</div>
+
+    <!-- SCRIPT DE CONFIGURACIÓN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            updateEmail, 
+            updatePassword, 
+            EmailAuthProvider, 
+            reauthenticateWithCredential 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAQ4f1wD8W3WOoZANRO5KvOJW2gfP_wwE",
+            authDomain: "bancomovil-421ff.firebaseapp.com",
+            projectId: "bancomovil-421ff",
+            storageBucket: "bancomovil-421ff.firebasestorage.app",
+            messagingSenderId: "280973267975",
+            appId: "1:280973267975:web:6be8cbf4d2ece640e346a2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toast");
+            if (!toast) return;
+            toast.textContent = message;
+            toast.className = `show ${type}`;
+            setTimeout(() => { toast.className = ""; }, 3000);
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            // Cargar datos de perfil y preferencias en la interfaz
+            document.getElementById("userNameDisplay").textContent = user.displayName || "Usuario";
+            document.getElementById("userAvatar").textContent = (user.displayName || "PC").substring(0, 2).toUpperCase();
+
+            const userRef = doc(db, "usuarios", user.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const data = userSnap.data();
+                if (data.numeroCuenta) {
+                    document.getElementById("userAccountNum").textContent = `Cuenta: ${data.numeroCuenta}`;
+                }
+                if (data.twoFactorAuth !== undefined) {
+                    document.getElementById("toggle2FA").checked = data.twoFactorAuth;
+                }
+                if (data.smsNotifications !== undefined) {
+                    document.getElementById("toggleSMS").checked = data.smsNotifications;
+                }
+            }
+        });
+
+        // 1. Cambiar Correo Electrónico
+        document.getElementById("formChangeEmail").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const newEmail = document.getElementById("newEmail").value;
+            const currentPassword = document.getElementById("currentPasswordForEmail").value;
+            const user = auth.currentUser;
+
+            try {
+                const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                await reauthenticateWithCredential(user, credential);
+                await updateEmail(user, newEmail);
+                
+                await setDoc(doc(db, "usuarios", user.uid), { email: newEmail }, { merge: true });
+                showToast("Correo electrónico actualizado con éxito");
+                document.getElementById("formChangeEmail").reset();
+            } catch (err) {
+                showToast("Error: " + err.message, "error");
+            }
+        });
+
+        // 2. Cambiar Contraseña
+        document.getElementById("formChangePassword").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const currentPassword = document.getElementById("currentPassword").value;
+            const newPassword = document.getElementById("newPassword").value;
+            const user = auth.currentUser;
+
+            try {
+                const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                await reauthenticateWithCredential(user, credential);
+                await updatePassword(user, newPassword);
+                
+                showToast("Contraseña actualizada con éxito");
+                document.getElementById("formChangePassword").reset();
+            } catch (err) {
+                showToast("Error: " + err.message, "error");
+            }
+        });
+
+        // 3. Guardar Preferencias 2FA y SMS en Firestore
+        document.getElementById("toggle2FA").addEventListener("change", async (e) => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const enabled = e.target.checked;
+            try {
+                await setDoc(doc(db, "usuarios", user.uid), { twoFactorAuth: enabled }, { merge: true });
+                showToast(enabled ? "Autenticación de 2 pasos activada" : "Autenticación de 2 pasos desactivada");
+            } catch (err) {
+                showToast("No se pudo actualizar la preferencia", "error");
+            }
+        });
+
+        document.getElementById("toggleSMS").addEventListener("change", async (e) => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const enabled = e.target.checked;
+            try {
+                await setDoc(doc(db, "usuarios", user.uid), { smsNotifications: enabled }, { merge: true });
+                showToast(enabled ? "Alertas por SMS activadas" : "Alertas por SMS desactivadas");
+            } catch (err) {
+                showToast("No se pudo actualizar la preferencia", "error");
+            }
+        });
+    </script>
+</body>
+</html>

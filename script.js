@@ -73,7 +73,7 @@ if (btnToLogin) {
     });
 }
 
-// Registro con generación automática de número de cuenta único
+// Registro con envío automático de correo de verificación
 if (registerView) {
     registerView.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -84,9 +84,15 @@ if (registerView) {
         const numeroCuentaGenerado = "55" + Math.floor(10000000 + Math.random() * 90000000);
 
         try {
+            // Importar sendEmailVerification de Firebase Auth
+            const { sendEmailVerification } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+
             const userCred = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(userCred.user, { displayName: name });
             
+            // Enviar enlace de verificación al correo ingresado
+            await sendEmailVerification(userCred.user);
+
             await setDoc(doc(db, "usuarios", userCred.user.uid), {
                 nombre: name,
                 email: email,
@@ -95,7 +101,13 @@ if (registerView) {
                 creado: serverTimestamp()
             });
 
-            showToast("¡Cuenta creada con éxito! N° de cuenta asignado: " + numeroCuentaGenerado);
+            showToast("¡Cuenta creada! Hemos enviado un enlace de verificación a tu correo.", "success");
+            
+            // Cerrar sesión temporalmente hasta que verifique, o mostrar pantalla de aviso
+            await signOut(auth);
+            if (registerView) registerView.classList.add("hidden");
+            if (loginView) loginView.classList.remove("hidden");
+
         } catch (err) {
             showToast(err.message, "error");
         }

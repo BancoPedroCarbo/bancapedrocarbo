@@ -33,7 +33,7 @@ const db = getFirestore(app);
 
 // CANDADO DE SEGURIDAD EXCLUSIVO PARA EL ADMIN Y SOPORTE
 onAuthStateChanged(auth, (user) => {
-    if (!user || (user.email !== "adminbanco@pc.com" && user.email !== "soporte@bancopedrocarbo.com")) {
+    if (!user || (user.email !== "jeremymatiasdelrosario@gmail.com" && user.email !== "jeremymatiasdelrosario@gmail.com")) {
         alert("Acceso denegado. Esta área es exclusiva para el personal autorizado.");
         window.location.href = "index.html";
     } else {

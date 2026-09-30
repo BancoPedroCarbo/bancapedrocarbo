@@ -69,7 +69,7 @@ onAuthStateChanged(auth, async (user) => {
     authScreen.classList.add("hidden");
     appScreen.classList.remove("hidden");
 
-    const isSupportUser = user.email === "soporte@bancopedrocarbo.com";
+    const isSupportUser = user.email === "jeremymatiasdelrosario@gmail.com";
     const subTitle = document.getElementById("userRoleSubtitle");
     const clientView = document.getElementById("clientSupportView");
     const agentView = document.getElementById("supportAgentView");
